@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VidAI</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="stylesheet"
+        href="https://maxst.icons8.com/vue-static/landings/line-awesome/line-awesome/1.3.0/css/line-awesome.min.css">
+    <link rel="stylesheet"
+        href="https://maxst.icons8.com/vue-static/landings/line-awesome/font-awesome-line-awesome/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/index.css">
+</head>
+
+<body class="bg-[#FAFAFA] text-[13px] md:text-[17px]">
+    <div id="overlay" class="hidden fixed top-0 left-0 w-full h-full bg-black opacity-50 z-20"></div>
+    {{> header }}
+   
+    {{!-- <main class="fixed top-[3.8rem] sm:top-[5.4rem]">
+        <div class="md:grid md:grid-cols-[6rem_auto_6rem] md:gap-x-[2rem] flex flex-col items-center">
+            {{{ body }}}
+            {{> sidebar }}
+        </div>
+    </main> --}}
+    <main>
+        {{{ body }}}
+        {{> sidebar }}
+    </main>
+
+    <script>
+        function insertHashtag() {
+            const textarea = document.getElementById('post-content');
+            const cursorPos = textarea.selectionStart; // Get current cursor position
+            const currentText = textarea.value;
+
+            textarea.value = currentText.slice(0, cursorPos) + '#' + currentText.slice(cursorPos);
+            textarea.selectionStart = textarea.selectionEnd = cursorPos + 1;
+            textarea.focus();
+        }
+ƒ
+        // Function to show image preview after selection
+        function previewImage(event) {
+            const file = event.target.files[0];
+            const previewImg = document.getElementById('preview-img');
+            const imagePreview = document.getElementById('image-preview');
+
+            if (file) {
+                // Create a URL for the selected image and set it as the source
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    previewImg.src = e.target.result;
+                    imagePreview.classList.remove('hidden');  // Show the image preview
+                };
+                reader.readAsDataURL(file);
+            } else {
+                imagePreview.classList.add('hidden');  // Hide the preview if no image is selected
+            }
+        }
+
+        // Function to remove the image preview
+        function removeImage() {
+            const imagePreview = document.getElementById('image-preview');
+            const imageUploadInput = document.getElementById('image-upload');
+
+            // Hide the image preview and reset the file input
+            imagePreview.classList.add('hidden');
+            imageUploadInput.value = '';  // Clear the selected file
+        }
+    </script>
+    <script src="/js/button.js"></script>
+</body>
+
+</html>

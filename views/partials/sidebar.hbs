@@ -1,0 +1,84 @@
+{{!-- left --}}
+<div class="md:ml-[0.5rem] h-full z-5 order-1">
+  {{!-- sidebar --}}
+  <div
+    class="bg-[#FAFAFA] flex flex-row md:flex-col items-center justify-between bottom-0 w-full h-[3rem] sm:h-[4.2rem] md:w-auto md:h-[calc(100vh-10*1vh-(100vh/5))] md:bottom-[1vh] cursor-pointer transition-all duration-300 ease-in-out fixed">
+    {{!-- group --}}
+    <div class="flex flex-row md:flex-col items-center justify-center w-full gap-[2rem] md:gap-3 sm:gap-[calc((100vw-5%*2-17rem)/5)]">
+      <a href="/Homepage"
+        class="menu-item relative p-[.5rem] sm:p-[1.2rem] text-black hover:bg-gray-200 hover:rounded-[1rem] transition-all duration-300 ease-in-out {{#if (eq page 1)}}bg-gray-200 rounded-[1rem]{{/if}}">
+        <span class="text-[1.3rem]">
+          <i class="fa-solid fa-house"></i>
+        </span>
+      </a>
+      <a href="/EditVideo"
+        class="menu-item relative p-[.5rem] sm:p-[1.2rem] text-black hover:bg-gray-200 hover:rounded-[1rem] transition-all duration-300 ease-in-out {{#if (eq page 2)}}bg-gray-200 rounded-[1rem]{{/if}}">
+        <span class="text-[1.3rem]">
+          <i class="lar la-file-video"></i>
+        </span>
+      </a>
+
+      <a href="/Profile"
+        class="menu-item relative p-[.5rem] sm:p-[1.2rem] text-black hover:bg-gray-200 hover:rounded-[1rem] transition-all duration-300 ease-in-out {{#if (eq page 3)}}bg-gray-200 rounded-[1rem]{{/if}}">
+        <span class="text-[1.3rem]">
+          <i class="fa-regular fa-user"></i>
+        </span>
+      </a>
+    </div>
+    {{!-- popup --}}
+    <div
+      class="menu-item md:block hidden relative p-[1.2rem] text-black hover:bg-gray-200 hover:rounded-[1rem] transition-all duration-300 ease-in-out"
+      id="sidebar-function">
+      <span>
+        <i class="fa-solid fa-grip-lines text-lg"></i>
+      </span>
+      <div id="sidebar-functionPopup"
+        class="absolute hidden left-[120%] bottom-[40%] w-[15rem] bg-white rounded-lg p-2">
+        <div
+          class="hover:bg-gray-200 hover:rounded-[1rem] transition-all duration-300 ease-in-out p-[1rem] m-[.3rem] rounded-[.5rem] cursor-pointer bg-zinc-100">
+          Theme
+        </div>
+        <div
+          class="hover:bg-gray-200 hover:rounded-[1rem] transition-all duration-300 ease-in-out p-[1rem] m-[.3rem] rounded-[.5rem] cursor-pointer bg-zinc-100">
+          Detail Information
+        </div>
+        <div
+          class="hover:bg-gray-200 hover:rounded-[1rem] transition-all duration-300 ease-in-out p-[1rem] m-[.3rem] rounded-[.5rem] cursor-pointer bg-zinc-100">
+          Settings
+        </div>
+        <div
+          class="hover:bg-gray-200 hover:rounded-[1rem] transition-all duration-300 ease-in-out p-[1rem] m-[.3rem] rounded-[.5rem] cursor-pointer bg-zinc-100">
+          <a href="/Login">Logout</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/home.js"></script>
+<script>
+  document.querySelectorAll('.plus-button').forEach(button => {
+  button.addEventListener('click', function (event) {
+    event.preventDefault(); // Prevent the default behavior
+    var popup = document.getElementById('plus-popup');
+    var overlay = document.getElementById('overlay');
+    popup.classList.toggle('hidden');
+    overlay.classList.toggle('hidden');
+  });
+});
+
+  document.getElementById('overlay').addEventListener('click', function() {
+    var popup = document.getElementById('plus-popup');
+    var overlay = document.getElementById('overlay');
+    
+    // Hide the popup and overlay
+    popup.classList.add('hidden');
+    overlay.classList.add('hidden');
+  });
+
+  document.getElementById('close-create').addEventListener('click', function() {
+    var close = document.getElementById('plus-popup');
+    close.classList.add('hidden');
+    overlay.classList.add('hidden');
+  })
+</script>

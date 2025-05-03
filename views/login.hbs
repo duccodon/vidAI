@@ -1,0 +1,19 @@
+<div
+    class="mx-auto mt-[40px] sm:mt-[-calc(100vw/13)] bg-white p-6 rounded-lg w-[400px] flex justify-center flex-col">
+    <h2 class="text-center pb-4 text-xl font-semibold">Login</h2>
+    <form action="" method="POST">
+        <input type="text" id="usernameOrEmail" name="usernameOrEmail" placeholder="Username or Email"
+            class="w-full p-5 mb-5 rounded-xl border border-gray-300 bg-[#FAFAFA] box-border" required>
+        <input type="password" id="password" name="password" placeholder="Password"
+            class="w-full p-5 mb-5 rounded-xl border border-gray-300 bg-[#FAFAFA] box-border" required>
+        <div class="flex justify-center">
+            <input type="submit" value="Login"
+                class="mt-4 flex justify-center px-8 py-2 font-medium rounded-xl cursor-pointer transition-all ease-in-out duration-300 text-sm bg-black text-white hover:opacity-80">
+        </div>
+    </form>
+
+    <a href="/Login/ResetPass" class="login text-sm text-gray-400 font-normal mt-2 flex justify-center">Forgot password?</a>
+    <div class="line-with-word relative text-center text-sm text-gray-400 my-4">Create an account</div>
+    {{> button link="/CreateAccount" styling="flex justify-center bg-white text-black border border-gray-300 py-2 px-8 rounded-xl font-medium
+    text-sm hover:opacity-80" text="Create Account"}}
+</div>

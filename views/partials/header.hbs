@@ -1,0 +1,81 @@
+<nav class="w-full py-[.7rem] fixed top-0 z-10">
+  <div class="w-[95%] mx-auto flex justify-between items-center">
+    <h2 class="flex gap-[.5rem] text-[20px] sm:text-xl font-bold mx-auto md:mx-0 translate-x-[25%]">
+      VidAI
+      <div class="homepage md:hidden bg-white px-[.5rem] py-[.2rem] rounded-[.7rem]" id="homepage">
+        <i class="fa-solid fa-angle-down"></i>
+      
+        <div
+          class="content-homepage hidden absolute left-[75%] w-[8rem] p-[0.3rem] top-[90%] md:left-[52%] md:w-[11rem] md:p-[.3rem] right-0 bg-white rounded-[1rem]">
+          <a href="/Homepage"
+            class="text-[15px] hover:bg-gray-200 hover:rounded-[1rem] transition-all duration-300 ease-in-out p-[calc(100vw/200)] m-[.3rem] rounded-[.5rem] cursor-pointer bg-zinc-100">
+            All user
+          </a>
+          <a href="/Homepage?view=following"
+            class="text-[15px] hover:bg-gray-200 hover:rounded-[1rem] transition-all duration-300 ease-in-out p-[calc(100vw/200)] m-[.3rem] rounded-[.5rem] cursor-pointer bg-zinc-100">
+            Following user
+          </a>
+        </div>
+      </div>
+    </h2>
+    
+    <div class="hidden md:flex md:gap-[1rem]">
+      <h2 class="text-xl font-bold">{{headerName}}</h2>
+      {{#if (eq headerName "Home")}}
+      <div class="homepage bg-white px-[.5rem] py-[.2rem] rounded-[.7rem]">
+        <i class="fa-solid fa-angle-down"></i>
+      
+        <div
+          class="content-homepage hidden absolute left-[75%] w-[calc(100vw/5)] p-[0.3rem] top-[90%] md:left-[52%] md:w-[11rem] md:p-[.3rem] right-0 bg-white rounded-[1rem]">
+          <a href="/Homepage"
+            class="hover:bg-gray-200 hover:rounded-[1rem] block transition-all duration-300 ease-in-out p-[calc(100vw/200)] m-[.3rem] rounded-[.5rem] cursor-pointer bg-zinc-100">
+            All user
+          </a>
+          <a href="/Homepage?view=following"
+            class="hover:bg-gray-200 hover:rounded-[1rem] block transition-all duration-300 ease-in-out p-[calc(100vw/200)] m-[.3rem] rounded-[.5rem] cursor-pointer bg-zinc-100">
+            Following user
+          </a>
+        </div>
+      </div>
+      {{/if}}
+    </div>
+    <div class="hidden md:block">
+      {{> button link="/Login" styling="bg-black text-white" text="Log out" }} 
+    </div>
+    <div class="menu-item text-black block py-[.4rem] sm:py-[.7rem] md:hidden" id="top-function">
+      <span class="text-xl p-[.5rem] sm:p-[1.2rem] hover:bg-gray-200 hover:rounded-[1rem] transition-all duration-300 ease-in-out">
+        <i class="fa-solid fa-grip-lines"></i>
+      </span>
+      <div
+        class="absolute left-[70%] w-[7rem] sm:w-[calc(100vw/5)] p-[0.3rem] top-[90%] md:left-[70%] md:w-[15rem] md:p-[.3rem] right-0 bg-white rounded-[1rem] hidden" id="top-functionPopup">
+        <div
+          class="hover:bg-gray-200 hover:rounded-[1rem] transition-all duration-300 ease-in-out p-[calc(100vw/45)] m-[.3rem] rounded-[.5rem] cursor-pointer bg-zinc-100">
+          Theme
+        </div>
+        <div
+          class="hover:bg-gray-200 hover:rounded-[1rem] transition-all duration-300 ease-in-out p-[calc(100vw/45)] m-[.3rem] rounded-[.5rem] cursor-pointer bg-zinc-100">
+          Detail Information
+        </div>
+        <div
+          class="hover:bg-gray-200 hover:rounded-[1rem] transition-all duration-300 ease-in-out p-[calc(100vw/45)] m-[.3rem] rounded-[.5rem] cursor-pointer bg-zinc-100">
+          Settings
+        </div>
+        <div
+          class="hover:bg-gray-200 hover:rounded-[1rem] transition-all duration-300 ease-in-out p-[calc(100vw/45)] m-[.3rem] rounded-[.5rem] cursor-pointer bg-zinc-100">
+          <a href="/login">Logout</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</nav>
+
+<script>
+  document.querySelectorAll('.homepage').forEach(homepageElement => {
+  homepageElement.addEventListener('click', function() {
+    document.querySelectorAll('.content-homepage').forEach(contentElement => {
+      contentElement.classList.toggle('hidden');
+    });
+  });
+});
+</script>

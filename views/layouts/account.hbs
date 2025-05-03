@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VidAI || {{title}}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet"
+        href="https://maxst.icons8.com/vue-static/landings/line-awesome/line-awesome/1.3.0/css/line-awesome.min.css">
+    <link rel="stylesheet"
+        href="https://maxst.icons8.com/vue-static/landings/line-awesome/font-awesome-line-awesome/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+
+    <link rel="stylesheet" href="/css/index.css">
+</head>
+
+<body class="bg-white overflow-x-hidden">
+    {{#if errorMessage}}
+    <div id="popup"
+        class="fixed w-[80%] sm:w-[400px] ml-[calc(50vw)] mt-[15vh] h-auto w-[36rem] transform translate-x-[-50%] translate-y-[-50%] bg-black rounded-[.8rem] px-[2rem] py-[.5rem] z-20">
+        <div class="inline-flex justify-between w-full text-white">
+            <div>{{errorMessage}}</div>
+            <div>
+                <i id="closeBtn" class="fa-solid fa-x cursor-pointer"></i>
+            </div>
+        </div>
+    </div>
+    {{/if}}
+
+    <div class="flex justify-center">
+    <img class="cover w-full sm:w-[200px] md:w-[300px] lg:w-[500px] mt-[-2%] object-cover block" src="/img/assets/vidAILogo.png" alt="Description of image">
+    </div>
+
+    {{{ body }}}
+    {{> footer }}
+
+    <script>
+        const popup = document.getElementById("popup");
+        const closeBtn = document.getElementById("closeBtn");
+
+        closeBtn.addEventListener("click", () => {
+            popup.classList.toggle("hidden");
+        });
+    </script>
+</body>
+
+</html>
