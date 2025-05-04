@@ -8,6 +8,8 @@ const crypto = require('crypto');
 const { fn, col, literal } = require("sequelize");
 
 const axios = require('axios'); //crawl Wikipedia
+const xml2js = require("xml2js"); // crawl PubMed
+const cheerio = require('cheerio'); // crawl Nature
 
 
 
@@ -123,8 +125,13 @@ controller.genScript = async (req, res) => {
   console.log("Topic received:", topic); 
 
   if (!topic) return res.status(400).json({ success: false, message: "No topic provided" });
-    const rawText = await crawlWikipedia(topic); 
+    const rawText = await crawlWikipedia(topic);
+    const pubmedText = await crawlPubMed(topic); 
+    const natureText = await crawlNature(topic);
+
     console.log("Raw text from Wikipedia:", rawText); 
+    console.log("\nRaw text from PubMed:", pubmedText);
+    console.log("\nRaw text from Nature:", natureText);
     //const script = await generateScript(rawText); 
  try {
     return res.json({ success: true, script });
@@ -136,18 +143,111 @@ controller.genScript = async (req, res) => {
 
 async function crawlWikipedia(topic) {
   const encodedTopic = encodeURIComponent(topic);
-  const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodedTopic}`;
 
   try {
-    const response = await axios.get(url);
-    if (response.data && response.data.extract) {
-      return response.data.extract;
-    } else {
-      throw new Error("No content found for topic.");
+    const searchUrl = `https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodedTopic}&limit=1&namespace=0&format=json`;
+    const searchResponse = await axios.get(searchUrl);
+    const resultTitles = searchResponse.data?.[1];
+    if (!resultTitles || resultTitles.length === 0) {
+      return "";
     }
+
+    const bestMatch = resultTitles[0]; // lấy tiêu đề trang khớp nhất
+    const summaryUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(bestMatch)}`;
+
+    const summaryResponse = await axios.get(summaryUrl);
+    return summaryResponse.data.extract || "No content found.";
   } catch (error) {
-    console.error("Error crawling Wikipedia:", error.message);
-    throw new Error("Failed to fetch Wikipedia content.");
+    return "";
+  }
+}
+
+async function crawlPubMed(topic) {
+  const encodedTopic = encodeURIComponent(topic);
+  const searchUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&retmax=1&retmode=json&term=${encodedTopic}`;
+  console.log("Search pubmed URL:", searchUrl); 
+  
+  try {
+    const searchResponse = await axios.get(searchUrl);
+    console.log("Search Response:", searchResponse.data); 
+    const idList = searchResponse.data?.esearchresult?.idlist;
+
+    if (!idList || idList.length === 0) {
+      return "";
+    }
+
+    const id = String(idList[0]);
+    console.log("PubMed ID:", id);
+    
+    const fetchUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=${id}&retmode=xml`;
+    const fetchResponse = await axios.get(fetchUrl);
+    const xml = fetchResponse.data;
+    console.log("XML Response:", fetchResponse.data);
+
+
+    var parseString = require('xml2js').parseString;
+    let result;
+    parseString(xml, function (err, parsedResult) {
+      if (err) {
+        console.error("Error parsing XML:", err);
+        return;
+      }
+      result = parsedResult;
+    });
+
+    const article = result?.PubmedArticleSet?.PubmedArticle?.[0];
+    const abstractText = article?.MedlineCitation[0]?.Article?.[0]?.Abstract?.[0].AbstractText;
+    console.log("Abstract Text:", abstractText);  
+
+    // Nếu abstract có nhiều đoạn thì nối lại
+    const text = Array.isArray(abstractText)
+       ? abstractText.map((t) => (typeof t === "string" ? t : t._ || "")).join(" ")
+       : abstractText;
+
+    //console.log("Parsed Text:", text);
+    return text.replace(/\s+/g, " ").trim();
+  } catch (error) {
+    return "";
+  }
+}
+
+async function crawlNature(topic) {
+  const encodedTopic = encodeURIComponent(topic);
+  const searchUrl = `https://www.nature.com/search?q=${encodedTopic}&order=relevance`;
+
+  try {
+    console.log("Search Nature URL:", searchUrl); 
+    const searchPage = await axios.get(searchUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0"
+      }
+    });
+
+    const $ = cheerio.load(searchPage.data);
+    const firstArticleLink = $("li.app-article-list-row__item a").first().attr("href");
+
+    if (!firstArticleLink) {
+      return "";
+    }
+
+    const fullArticleUrl = `https://www.nature.com${firstArticleLink}`;
+    console.log("Article URL:", fullArticleUrl);
+
+    // Lấy nội dung bài đầu tiên
+    const articlePage = await axios.get(fullArticleUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0"
+      }
+    });
+
+    const $$ = cheerio.load(articlePage.data);
+    const title = $$("h1.c-article-title").text().trim();
+    const abstract = $$("div.c-article-section__content p").first().text().trim();
+
+    return `${title}\n\n Abstract: ${abstract}`;
+  } catch (error) {
+    console.error("Lỗi crawl Nature:", error.message);
+    throw new Error("Failed to crawl Nature.");
   }
 }
 
