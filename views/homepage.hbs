@@ -1,15 +1,94 @@
-<div class="scrollbar fixed top-[3.8rem] sm:top-[5.4rem] left-1/2 transform translate-x-[-50%] h-[calc(100vh-5*1vh-3.8rem)] sm:h-[calc(100vh-5*1vh-7rem)] md:h-[calc(100vh-5*1vh-2rem)] w-[100%] md:w-[38rem] bg-white rounded-[1rem] border border-[#ccc] overflow-y-auto overflow-x-hidden z-3">
+<div class="scrollbar fixed top-[3.8rem] sm:top-[5.4rem] left-[100px] h-[calc(100vh-5*1vh-3.8rem)] sm:h-[calc(100vh-5*1vh-7rem)] md:h-[calc(100vh-5*1vh-2rem)] w-[100%] md:w-[93%] bg-white rounded-[1rem] border border-[#ccc] overflow-y-auto overflow-x-hidden z-3">
   <div class="mx-4 my-auto items-center gap-[1rem] py-[1rem] md:flex hidden">
     <img
     src="data:image/jpeg;base64,{{currentUser.profile_picture}}"
     class="min-w-[2.5rem] min-h-[2.5rem] max-w-[2.5rem] max-h-[2.5rem] rounded-[50%] overflow-hidden"
     />
-    <div class="plus-button justify-self-start w-full pl-4 mr-4 text-[13px] bg-[#FAFAFA] rounded-[2rem] px-[.5rem] py-[.5rem]">
-      What's new
-    </div>
+    <textarea id="insertTopic" class="plus-button justify-self-start w-full pl-4 mr-4 text-[13px] bg-[#FAFAFA] rounded-[2rem] px-[.5rem] py-[.5rem]"
+      placeholder="What's on your mind?"
+      rows="1"
+      oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px';"></textarea>
     <div
+      id="postButton"
       class="plus-button inline-block px-[2rem] py-[.6rem] font-medium cursor-pointer transition ease-in-out duration-300 text-sm hover:opacity-80 bg-white text-black border border-black border-solid rounded-[.7rem]">
-      Post
+      Next
     </div>
   </div>
+
+  <div class="mx-4 my-auto items-center gap-[1rem] py-[1rem] text-[25px]">Hot topics</div>
+  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-6 p-4">
+    <div class="flex flex-col">
+      <div class="w-full aspect-[4/3] bg-gray-200 rounded-lg overflow-hidden shadow" onclick="chooseTopic('Geology')">
+        <img src="/img/assets/vidAILogo.png" alt="Preview" class="w-full h-full object-cover" />
+      </div>
+      <div class="flex justify-center mt-2 text-[15px] font-medium text-black truncate">Geology</div>
+    </div>
+
+    <div class="flex flex-col">
+      <div class="w-full aspect-[4/3] bg-gray-200 rounded-lg overflow-hidden shadow" onclick="chooseTopic('Physics')">
+        <img src="/img/assets/vidAILogo.png" alt="Preview" class="w-full h-full object-cover" />
+      </div>
+      <div class="flex justify-center mt-2 text-[15px] font-medium text-black truncate">Physics</div>
+    </div>
+
+    <div class="flex flex-col">
+      <div class="w-full aspect-[4/3] bg-gray-200 rounded-lg overflow-hidden shadow" onclick="chooseTopic('Chemistry')">
+        <img src="/img/assets/vidAILogo.png" alt="Preview" class="w-full h-full object-cover" />
+      </div>
+      <div class="flex justify-center mt-2 text-[15px] font-medium text-black truncate">Chemistry</div>
+    </div>
+
+    <div class="flex flex-col">
+      <div class="w-full aspect-[4/3] bg-gray-200 rounded-lg overflow-hidden shadow" onclick="chooseTopic('Biology')">
+        <img src="/img/assets/vidAILogo.png" alt="Preview" class="w-full h-full object-cover" />
+      </div>
+      <div class="flex justify-center mt-2 text-[15px] font-medium text-black truncate">Biology</div>
+    </div>
+
+    <div class="flex flex-col">
+      <div class="w-full aspect-[4/3] bg-gray-200 rounded-lg overflow-hidden shadow" onclick="chooseTopic('Animal')">
+        <img src="/img/assets/vidAILogo.png" alt="Preview" class="w-full h-full object-cover" />
+      </div>
+      <div class="flex justify-center mt-2 text-[15px] font-medium text-black truncate">Animal</div>
+    </div>
+
+    <div class="flex flex-col">
+      <div class="w-full aspect-[4/3] bg-gray-200 rounded-lg overflow-hidden shadow" onclick="chooseTopic('War')">
+        <img src="/img/assets/vidAILogo.png" alt="Preview" class="w-full h-full object-cover" />
+      </div>
+      <div class="flex justify-center mt-2 text-[15px] font-medium text-black truncate">War</div>
+    </div>
+  </div>
+
+
 </div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+  document.getElementById("postButton").addEventListener("click", async function () {
+    const topic = document.getElementById("insertTopic").value.trim();
+
+    if (!topic) {
+      alert("Please enter a topic.");
+      return;
+    }
+
+    console.log("Topic entered:", topic);
+    try {
+      const res = await fetch("/homepage/api/generate-script", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ topic }),
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  });
+  });
+
+  function chooseTopic(topic) {
+    console.log("Topic chosen:", topic);
+  }
+</script>

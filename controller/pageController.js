@@ -7,6 +7,9 @@ const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const { fn, col, literal } = require("sequelize");
 
+const axios = require('axios'); //crawl Wikipedia
+
+
 
 controller.showLogin = (req, res) => {
     const errorMessage = req.flash('errorMessage');
@@ -114,5 +117,38 @@ controller.showProfile = async (req, res) => {
 
   res.render("profile", { headerName: "Profile", page: 3 });
 };
+
+controller.genScript = async (req, res) => {
+  const { topic } = req.body;
+  console.log("Topic received:", topic); 
+
+  if (!topic) return res.status(400).json({ success: false, message: "No topic provided" });
+    const rawText = await crawlWikipedia(topic); 
+    console.log("Raw text from Wikipedia:", rawText); 
+    //const script = await generateScript(rawText); 
+ try {
+    return res.json({ success: true, script });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: "Error generating script" });
+  }
+}
+
+async function crawlWikipedia(topic) {
+  const encodedTopic = encodeURIComponent(topic);
+  const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodedTopic}`;
+
+  try {
+    const response = await axios.get(url);
+    if (response.data && response.data.extract) {
+      return response.data.extract;
+    } else {
+      throw new Error("No content found for topic.");
+    }
+  } catch (error) {
+    console.error("Error crawling Wikipedia:", error.message);
+    throw new Error("Failed to fetch Wikipedia content.");
+  }
+}
 
 module.exports = controller
