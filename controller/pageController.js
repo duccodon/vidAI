@@ -7,6 +7,11 @@ const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const { fn, col, literal } = require("sequelize");
 
+const axios = require('axios');
+const xml2js = require("xml2js");
+const cheerio = require('cheerio');
+const fs = require('fs');
+
 const dotenv = require('dotenv');
 dotenv.config();
 
@@ -94,7 +99,7 @@ controller.showHomepage = async (req, res) => {
   res.render("homepage", { headerName: "Home", page: 1 });
 };
 
-controller.showEditVideo = async (req, res) => {
+controller.showVideo = async (req, res) => {
   const userId = req.session.userId; 
 
   res.locals.currentUser = await models.User.findByPk(userId, (err, user) => {
@@ -104,20 +109,160 @@ controller.showEditVideo = async (req, res) => {
   });
   res.locals.loggingInUser = res.locals.currentUser;
 
-  res.render("editVideo", { headerName: "Edit video", page: 2 });
+  try {
+    const userId = req.session.userId;
+
+    if (!userId) {
+      return res.redirect("/login"); // hoặc trả lỗi nếu chưa đăng nhập
+    }
+
+    // Lấy user hiện tại
+    const currentUser = await models.User.findByPk(userId);
+
+    // Lấy tất cả video của user này
+    const userVideos = await models.Video.findAll({
+      where: { userId },
+      order: [["createdAt", "DESC"]],
+      include: [
+        {
+          model: models.User,
+          attributes: ["username", "email"], // Chỉ lấy các thuộc tính cần thiết
+        },
+      ],
+    });
+
+    // Chuẩn bị dữ liệu gửi về giao diện
+    const videos = userVideos.map(video => ({
+      id: video.id,
+      title: video.title,
+      duration: video.duration,
+      description: video.description,
+      filename: video.filePath,
+      topic: video.topic,
+      createdAt: video.createdAt,
+    }));
+
+    // Gửi dữ liệu về giao diện
+    res.render("video", {
+      headerName: "Danh sách video",
+      page: 5,
+      currentUser,
+      videos,
+    });
+
+  } catch (error) {
+    console.error("Lỗi khi load video:", error);
+    res.status(500).send("Lỗi khi lấy danh sách video");
+  }
 };
 
 controller.showProfile = async (req, res) => {
-  const userId = req.session.userId; 
+  const userId = req.session.userId;
 
-  res.locals.currentUser = await models.User.findByPk(userId, (err, user) => {
-    if (err) {
+  try {
+    const user = await models.User.findByPk(userId);
+    if (!user) {
       return res.status(500).send("Error retrieving user information");
     }
-  });
-  res.locals.loggingInUser = res.locals.currentUser;
 
-  res.render("profile", { headerName: "Profile", page: 3 });
+    let youtubeStats = null;
+    let historicalStats = [];
+    if (user.youtubeChannelId) {
+      const apiKey = process.env.YOUTUBE_API_KEY;
+      if (!apiKey) {
+        throw new Error("YouTube API Key is missing.");
+      }
+      const url = `https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id=${user.youtubeChannelId}&key=${apiKey}`;
+      
+      const response = await axios.get(url);
+      const channelData = response.data.items?.[0];
+      
+      if (channelData) {
+        youtubeStats = {
+          channelTitle: channelData.snippet.title,
+          subscriberCount: parseInt(channelData.statistics.subscriberCount),
+          videoCount: parseInt(channelData.statistics.videoCount),
+          viewCount: parseInt(channelData.statistics.viewCount),
+          thumbnail: channelData.snippet.thumbnails.default.url,
+        };
+
+        if (models.ChannelStats) {
+          await models.ChannelStats.create({
+            userId,
+            subscriberCount: youtubeStats.subscriberCount,
+            videoCount: youtubeStats.videoCount,
+            viewCount: youtubeStats.viewCount,
+          });
+
+          historicalStats = await models.ChannelStats.findAll({
+            where: { userId },
+            order: [['recordedAt', 'ASC']],
+            limit: 7,
+          });
+        }
+      }
+    }
+
+    res.locals.currentUser = user;
+    res.locals.loggingInUser = user;
+    res.locals.youtubeStats = youtubeStats;
+    res.locals.historicalStats = historicalStats.map(stat => ({
+      date: stat.recordedAt.toISOString().split('T')[0],
+      subscriberCount: stat.subscriberCount,
+      videoCount: stat.videoCount,
+      viewCount: stat.viewCount,
+    }));
+
+    res.render("profile", { 
+      headerName: "Profile", 
+      page: 3,
+      youtubeStats,
+      historicalStats,
+    });
+  } catch (error) {
+    console.error("Error in showProfile:", error.message);
+    res.locals.currentUser = await models.User.findByPk(userId);
+    res.locals.youtubeStats = { error: error.message };
+    res.render("profile", { 
+      headerName: "Profile", 
+      page: 3,
+      youtubeStats: null,
+      historicalStats: [],
+    });
+  }
+};
+
+controller.updateProfile = async (req, res) => {
+  const userId = req.session.userId;
+  const { username, bio, youtubeChannelId } = req.body;
+
+  try {
+    const user = await models.User.findByPk(userId);
+    if (!user) {
+      req.flash('errorMessage', 'User not found.');
+      return res.redirect('/profile');
+    }
+
+    // Cập nhật thông tin
+    user.username = username || user.username;
+    user.bio = bio || user.bio;
+    user.youtubeChannelId = youtubeChannelId || user.youtubeChannelId;
+    
+    // Xử lý ảnh hồ sơ nếu có
+    if (req.file) {
+      user.profilePicture = fs.readFileSync(req.file.path).toString('base64');
+      // Xóa file tạm sau khi xử lý
+      fs.unlinkSync(req.file.path);
+    }
+
+    await user.save();
+    req.flash('errorMessage', 'Profile updated successfully.');
+    res.redirect('/profile');
+  } catch (error) {
+    console.error("Error updating profile:", error.message);
+    req.flash('errorMessage', 'Error updating profile. Please try again.');
+    res.redirect('/profile');
+  }
 };
 
 controller.genScript = async (req, res) => {

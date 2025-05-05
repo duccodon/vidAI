@@ -6,6 +6,7 @@ module.exports = (sequelize, DataTypes) => {
   class User extends Model {
     static associate(models) {
       // define association here
+      User.hasMany(models.Video, { foreignKey: "user_id" });
     }
   }
 
@@ -38,7 +39,11 @@ module.exports = (sequelize, DataTypes) => {
       isVerified: {           
         type: DataTypes.BOOLEAN,
         defaultValue: false,  
-      }
+      },
+      youtubeChannelId: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
     },
     {
       sequelize,

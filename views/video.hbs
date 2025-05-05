@@ -1,0 +1,31 @@
+<div class="scrollbar fixed top-[3.8rem] sm:top-[5.4rem] left-[100px] h-[calc(100vh-5*1vh-3.8rem)] sm:h-[calc(100vh-5*1vh-7rem)] md:h-[calc(100vh-5*1vh-2rem)] w-[100%] md:w-[93%] bg-white rounded-[1rem] border border-[#ccc] overflow-y-auto overflow-x-hidden z-3 p-4 space-y-4">
+
+  {{#if videos.length}}
+    <ul class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {{#each videos}}
+        <li class="bg-gray-50 rounded-xl border border-gray-200 shadow hover:shadow-md p-4 transition duration-300">
+          <div class="mb-2">
+            <h3 class="text-lg font-semibold text-gray-800">{{this.title}}</h3>
+            <p class="text-sm text-gray-500 mb-1">Chủ đề: {{this.topic}}</p>
+            <p class="text-sm text-gray-500">Thời lượng: {{this.duration}} giây</p>
+            <p class="text-sm text-gray-500">Người đăng: {{this.createdAt}}</p>
+          </div>
+
+          {{#if this.description}}
+            <p class="text-sm text-gray-600 mb-2">📄 {{this.description}}</p>
+          {{/if}}
+
+          <div class="rounded overflow-hidden">
+            <video class="w-full rounded-md border" controls>
+              <source src="{{this.filename}}" type="video/mp4">
+              Trình duyệt không hỗ trợ video.
+            </video>
+          </div>
+        </li>
+      {{/each}}
+    </ul>
+  {{else}}
+    <p class="text-gray-500 text-center mt-8 text-lg">Không có video nào.</p>
+  {{/if}}
+
+</div>

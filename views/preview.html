@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Editor</title>
+  <script src="https://unpkg.com/sortablejs@1.15.0/Sortable.min.js"></script>
+  <script src="https://unpkg.com/wavesurfer.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    .timeline-scale {
+      display: flex;
+      font-size: 0.75rem;
+      color: #4B5563;
+      white-space: nowrap;
+      gap: 32px;
+      position: relative;
+      min-width: 800px;
+    }
+    .playhead {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background-color: red;
+      z-index: 10;
+    }
+    .scroll-sync {
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+    #waveform {
+      min-width: 800px;
+      cursor: pointer;
+    }
+    #imageTimeline {
+    position: relative; /* Bắt buộc để ảnh con định vị đúng */
+    
+  }
+  #imageTimeline * {
+    user-select: none; /* Ngăn chọn text hoặc ảnh khi kéo */
+  }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+  <div class="max-w-6xl mx-auto p-6">
+    <h1 class="text-3xl font-bold mb-6 text-blue-700">🎬 AI Video Editor</h1>
+
+    <!-- Controls -->
+    <div class="mb-8 flex flex-wrap gap-4 items-center">
+      <button id="previewBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl shadow">Preview</button>
+      <button id="renderBtn" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-xl shadow">Render MP4</button>
+      <span id="currentTimeDisplay" class="text-sm text-gray-700 ml-4">🕒 00:00</span>
+    </div>
+
+    <!-- Image Selection & Preview Side by Side -->
+    <div class="mb-10">
+      <div class="flex gap-1">
+        <div class="grid grid-cols-4 gap-3 max-h-96 overflow-y-auto w-1/2 bg-white rounded-xl shadow-inner p-4" id="imageForm"></div>
+        <div class="w-2/3 bg-white rounded-xl p-4">
+          <h3 class="text-lg font-medium mb-2 text-gray-600">Image Preview</h3>
+          <div class="border border-gray-300 rounded-xl p-4 shadow">
+            <img id="selectedPreview" src="" class="w-full h-auto rounded-xl" />
+            <button id="moveToTimeline" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl w-full shadow">Move to Timeline</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step Slider -->
+    <div class="mb-6 flex flex-col">
+      <label for="stepSelect" class="text-sm font-medium text-gray-700 mb-1">
+        Timeline Step (seconds): 
+        <span id="stepValue" class="font-semibold text-blue-600 ml-1">5</span>
+      </label>
+      <input id="stepSelect" type="range" min="1" max="30" step="1" value="5" class="w-full">
+    </div>
+    <div class="mb-6">
+      <div class="mb-6 flex justify-between items-center gap-4">
+        <!-- Nhóm bên trái -->
+        <div class="flex gap-4">
+          <button id="playPauseBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-xl shadow">Play / Pause</button>
+          <button id="RestartBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-xl shadow">Restart</button>
+        </div>
+      
+        <!-- Nhóm bên phải -->
+        <div class="flex gap-2">
+          <button id="moveFirstBtn" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-xl shadow">First</button>
+          <button id="movePrevBtn" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-xl shadow">Prev</button>
+          <button id="moveNextBtn" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-xl shadow">Next</button>
+          <button id="moveLastBtn" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-xl shadow">Last</button>
+        </div>
+      </div>
+      
+    </div>
+    <!-- Image Timeline (shared scroll) -->
+    <div class="mb-10 scroll-sync" id="timelineScroll">
+      <div style="width: max-content">
+        <div class="timeline-scale mb-1 relative" id="imageScale">
+          <div id="imagePlayhead" class="playhead"></div>
+        </div>
+        <div id="imageTimeline" class="flex h-24 p-4 border border-gray-300 bg-white rounded-xl shadow-inner" style="min-width: 100%"></div>
+      </div>
+    </div>
+
+    <!-- Audio Timeline (shared scroll) -->
+    <div class="mb-10 scroll-sync" id="audioTimelineScroll">
+      <div style="width: max-content">
+        <div class="timeline-scale mb-1 relative" id="audioScale">
+          <div id="audioPlayhead" class="playhead"></div>
+        </div>
+        <div class="waveform-container">
+          <div id="waveform" class="h-24 bg-white border rounded-xl shadow-inner"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mb-10">
+      <h2 class="text-xl font-semibold mb-4 text-gray-700">🎥 Video Preview</h2>
+      <canvas id="previewCanvas" class="w-full border border-gray-300 rounded-xl shadow" height="360"></canvas>
+    </div>
+    
+
+  <script>
+    const imageForm = document.getElementById('imageForm');
+    const imageTimeline = document.getElementById('imageTimeline');
+    const playPauseBtn = document.getElementById('playPauseBtn');
+
+    const imageFilenames = [
+      "image1.jpg", "image2.jpg", "image3.jpg", "image4.jpg", "image5.jpg",
+      "image1.jpg", "image2.jpg", "image3.jpg", "image4.jpg", "image5.jpg"
+    ];
+
+    imageFilenames.forEach((filename) => {
+      const img = document.createElement('img');
+      img.src = `/public/img/assets/${filename}`;
+      img.className = 'h-24 w-full object-cover border rounded-lg shadow cursor-pointer';
+      img.onclick = () => {
+        selectedPreview.src = `/public/img/assets/${filename}`;
+      };
+      imageForm.appendChild(img);
+    });
+
+
+    const imageScale = document.getElementById('imageScale');
+    const audioScale = document.getElementById('audioScale');
+    const waveform = document.getElementById('waveform');
+    const stepSelect = document.getElementById('stepSelect');
+    const stepValue = document.getElementById('stepValue');
+    const audioPlayhead = document.getElementById('audioPlayhead');
+    const imagePlayhead = document.getElementById('imagePlayhead');
+    const currentTimeDisplay = document.getElementById('currentTimeDisplay');
+    const restartButton = document.getElementById('RestartBtn');
+
+
+    
+    function updateTimelineMarks(duration) {
+      const step = parseInt(stepSelect.value);
+      const pps = waveform.scrollWidth / duration; // px per second
+      const markWidth = step * pps;
+
+      [imageScale, audioScale].forEach(scale => {
+        scale.innerHTML = '';
+        const playhead = scale === imageScale ? imagePlayhead : audioPlayhead;
+        scale.appendChild(playhead);
+
+        for (let t = 0; t <= duration; t += step) {
+          const mins = Math.floor(t / 60);
+          const secs = Math.floor(t % 60).toString().padStart(2, '0');
+
+          const tick = document.createElement('div');
+          tick.style.display = 'inline-block';
+          tick.style.width = `${markWidth}px`;
+          tick.textContent = `${mins}:${secs}`;
+          scale.appendChild(tick);
+        }
+
+        scale.style.width = `${waveform.scrollWidth}px`; // giữ đồng bộ scroll
+        imageTimeline.style.width = `${waveform.scrollWidth}px`;
+      });
+    }
+
+
+    const wavesurfer = WaveSurfer.create({
+      container: '#waveform',
+      waveColor: '#d1d5db',
+      progressColor: '#3b82f6',
+      height: 80
+    });
+
+    playPauseBtn.onclick = () => {
+      wavesurfer.playPause();
+    };
+
+    restartButton.onclick = () => {
+      wavesurfer.seekTo(0);     // quay về đầu
+      wavesurfer.play();        // phát lại
+    };
+
+
+    waveform.addEventListener('click', (e) => {
+      const rect = waveform.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const percent = x / rect.width;
+      wavesurfer.seekTo(percent);
+    });
+
+    wavesurfer.on('ready', () => {
+      const duration = wavesurfer.getDuration();
+      updateTimelineMarks(duration);
+    });
+
+    wavesurfer.on('audioprocess', () => {
+      const currentTime = wavesurfer.getCurrentTime();
+      const duration = wavesurfer.getDuration();
+      const percent = currentTime / duration;
+
+      const audioScaleWidth = audioScale.scrollWidth;
+      const imageScaleWidth = imageScale.scrollWidth;
+
+      audioPlayhead.style.left = `${percent * audioScaleWidth}px`;
+      imagePlayhead.style.left = `${percent * imageScaleWidth}px`;
+
+      const mins = Math.floor(currentTime / 60);
+      const secs = Math.floor(currentTime % 60).toString().padStart(2, '0');
+      currentTimeDisplay.textContent = `🕒 ${mins}:${secs}`;
+    });
+
+    wavesurfer.on('seek', (progress) => {
+      const duration = wavesurfer.getDuration();
+      const currentTime = progress * duration;
+      const mins = Math.floor(currentTime / 60);
+      const secs = Math.floor(currentTime % 60).toString().padStart(2, '0');
+      currentTimeDisplay.textContent = `🕒 ${mins}:${secs}`;
+    });
+
+    stepSelect.addEventListener('input', () => {
+      const duration = wavesurfer.getDuration();
+      stepValue.textContent = stepSelect.value; // ← Cập nhật giá trị
+      updateTimelineMarks(duration);
+    });
+
+    document.getElementById('timelineScroll').addEventListener('scroll', (e) => {
+      document.getElementById('audioTimelineScroll').scrollLeft = e.target.scrollLeft;
+    });
+    document.getElementById('audioTimelineScroll').addEventListener('scroll', (e) => {
+      document.getElementById('timelineScroll').scrollLeft = e.target.scrollLeft;
+    });
+
+    wavesurfer.load('/public/img/assets/audio1.mp3');
+  </script>
+  <script type="module">
+    import { ImageTimelineManager } from '/public/js/imageTimelineManager.js';
+
+    const timelineElement = document.getElementById('imageTimeline');
+    const selectedPreview = document.getElementById('selectedPreview');
+    const moveBtn = document.getElementById('moveToTimeline');
+    const imageForm = document.getElementById('imageForm');
+
+    const imageManager = new ImageTimelineManager(
+      document.getElementById('imageTimeline'),
+      () => waveform.scrollWidth,
+      () => wavesurfer.getDuration()
+    );
+    window.imageManager = imageManager;  // 👈 Thêm dòng này để export ra global
+
+    const imageFilenames = [
+      "image1.jpg", "image2.jpg", "image3.jpg", "image4.jpg", "image5.jpg",
+      "image1.jpg", "image2.jpg", "image3.jpg", "image4.jpg", "image5.jpg"
+    ];
+
+    imageFilenames.forEach((filename) => {
+      const img = document.createElement('img');
+      img.src = `/public/img/assets/${filename}`;
+      img.className = 'h-24 w-full object-cover border rounded-lg shadow cursor-pointer';
+      img.onclick = () => {
+        selectedPreview.src = `/public/img/assets/${filename}`;
+        console.log("Preview selected:", selectedPreview.src);
+      };
+      imageForm.appendChild(img);
+    });
+
+    moveBtn.onclick = () => {
+      if (selectedPreview.src) {
+        const src = selectedPreview.src;
+        const start = imageManager.getNextAvailableStart();
+        imageManager.addImage(src, start, 5);
+      }
+    };
+
+    // Gọi từ console để debug
+      window.getImageData = () => {
+        const data = imageManager.getAllImages();
+        console.log("Current timeline image data:", data);
+        return data;
+      };
+      window.addEventListener('keydown', (e) => {
+      if ((e.key === 'Delete' || e.key === 'Backspace') && imageManager.selectedWrapper) {
+        const wrapper = imageManager.selectedWrapper;
+
+        // Xóa khỏi DOM
+        wrapper.remove();
+
+        // Xóa khỏi danh sách quản lý
+        imageManager.images = imageManager.images.filter(img => img.wrapper !== wrapper);
+        imageManager.selectedWrapper = null;
+      }
+    });
+      window.addEventListener('keydown', (e) => {
+      if ((e.key === 'Delete' || e.key === 'Backspace') && imageManager.selectedWrapper) {
+        const wrapper = imageManager.selectedWrapper;
+
+        // Xóa khỏi DOM
+        wrapper.remove();
+
+        // Xóa khỏi danh sách quản lý
+        imageManager.images = imageManager.images.filter(img => img.wrapper !== wrapper);
+        imageManager.selectedWrapper = null;
+      }
+    });
+    function repositionImage(index) {
+        const wrapper = imageManager.selectedWrapper;
+        if (!wrapper) return;
+        const image = imageManager.images.find(img => img.wrapper === wrapper);
+        if (!image) return;
+
+        imageManager.images = imageManager.images.filter(img => img !== image);
+        imageManager.images.splice(index, 0, image);
+
+        // Tính lại vị trí bắt đầu dựa vào thứ tự
+        const pps = imageManager.getPixelsPerSecond();
+        let currentStart = 0;
+        imageManager.images.forEach(img => {
+          img.start = currentStart;
+          img.wrapper.style.left = `${currentStart * pps}px`;
+          currentStart += img.duration;
+        });
+      }
+
+      document.getElementById('moveFirstBtn').onclick = () => repositionImage(0);
+      document.getElementById('moveLastBtn').onclick = () => repositionImage(imageManager.images.length);
+      document.getElementById('movePrevBtn').onclick = () => {
+        const i = imageManager.images.findIndex(img => img.wrapper === imageManager.selectedWrapper);
+        if (i > 0) repositionImage(i - 1);
+      };
+      document.getElementById('moveNextBtn').onclick = () => {
+        const i = imageManager.images.findIndex(img => img.wrapper === imageManager.selectedWrapper);
+        if (i >= 0 && i < imageManager.images.length - 1) repositionImage(i + 1);
+      };
+  </script>
+</body>
+</html>

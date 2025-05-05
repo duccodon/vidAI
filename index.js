@@ -4,7 +4,12 @@ const flash = require('connect-flash');
 const app = express();
 const port = process.env.PORT || 3000;
 const expressHbs = require("express-handlebars");
-const moment = require('moment'); 
+const moment = require('moment');
+const cron = require('node-cron');
+const axios = require('axios');
+const models = require('./models');
+const path = require("path");
+
 
 // Flash messages setup
 app.use(session({
@@ -77,15 +82,37 @@ app.engine(
 );
 app.set("view engine", "hbs");
 
-// Middleware to parse JSON
+// Middleware to parse JSON 
 app.use(express.json());
 app.use(express .urlencoded({ extended: false }));
 
+// Chạy mỗi ngày lúc 00:00
+cron.schedule('0 0 * * *', async () => {
+  try {
+    const users = await models.User.findAll({ where: { youtubeChannelId: { [Op.ne]: null } } });
+    for (const user of users) {
+      const url = `https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${user.youtubeChannelId}&key=${process.env.YOUTUBE_API_KEY}`;
+      const response = await axios.get(url);
+      const channelData = response.data.items?.[0];
+      if (channelData) {
+        await models.ChannelStats.create({
+          userId: user.id,
+          subscriberCount: parseInt(channelData.statistics.subscriberCount),
+          videoCount: parseInt(channelData.statistics.videoCount),
+          viewCount: parseInt(channelData.statistics.viewCount),
+        });
+      }
+    }
+    console.log('YouTube stats updated');
+  } catch (error) {
+    console.error('Error updating YouTube stats:', error);
+  }
+}); 
 
 app.get("/", (req,res) => res.redirect("/Login"));
 
 app.use("/Homepage", ensureAuthenticated, require("./routes/pageRouter"));
-app.use("/EditVideo", ensureAuthenticated, require("./routes/editVideoRouter"));
+app.use("/Video", ensureAuthenticated, require("./routes/videoRouter"));
 app.use("/Profile", ensureAuthenticated, require("./routes/profileRouter"));
 
 app.use("/Login", require("./routes/loginRouter"));

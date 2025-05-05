@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Editor</title>
+  <script src="https://unpkg.com/sortablejs@1.15.0/Sortable.min.js"></script>
+  <script src="https://unpkg.com/wavesurfer.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-white text-gray-800">
+  <div class="max-w-6xl mx-auto p-4">
+    <h1 class="text-2xl font-bold mb-4">🎬 Video Editor</h1>
+
+    <!-- Controls -->
+    <div class="mb-6 flex flex-wrap gap-4 items-center">
+      <input type="file" id="audioInput" accept="audio/mp3" class="border p-2">
+      <input type="file" id="imageInput" accept="image/*" multiple class="border p-2">
+      <button id="previewBtn" class="bg-blue-500 text-white px-4 py-2 rounded">Preview</button>
+      <button id="renderBtn" class="bg-green-500 text-white px-4 py-2 rounded">Render MP4</button>
+    </div>
+
+    <!-- Timeline Container -->
+    <div class="mb-6">
+      <div id="waveform" class="mb-4 h-24 bg-gray-100 border"></div>
+      <div class="border p-2">
+        <h2 class="font-semibold mb-2">Image Timeline</h2>
+        <div id="imageTimeline" class="flex space-x-2 overflow-x-auto min-h-[120px] p-2 border border-dashed border-gray-300">
+          <!-- Images will appear here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Preview -->
+    <div>
+      <h2 class="font-semibold mb-2">Video Preview</h2>
+      <video id="videoPreview" controls class="w-full border"></video>
+    </div>
+  </div>
+
+  <script>
+    const imageInput = document.getElementById('imageInput');
+    const imageTimeline = document.getElementById('imageTimeline');
+
+    imageInput.addEventListener('change', (event) => {
+      imageTimeline.innerHTML = ''; // Clear existing
+      Array.from(event.target.files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const img = document.createElement('img');
+          img.src = e.target.result;
+          img.className = 'h-24 border rounded';
+          imageTimeline.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+
+    new Sortable(imageTimeline, {
+      animation: 150,
+      ghostClass: 'bg-yellow-100'
+    });
+
+    const wavesurfer = WaveSurfer.create({
+      container: '#waveform',
+      waveColor: '#ddd',
+      progressColor: '#007bff',
+      height: 80
+    });
+
+    document.getElementById('audioInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const url = URL.createObjectURL(file);
+        wavesurfer.load(url);
+      }
+    });
+  </script>
+</body>
+</html>
