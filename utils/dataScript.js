@@ -1,6 +1,9 @@
-const axios = require("axios"); //crawl Wikipedia
+const axios = require("axios"); //crawl Wikipedia, openAI gen script
 const xml2js = require("xml2js"); // crawl PubMed
 const cheerio = require("cheerio"); // crawl Nature
+
+const OpenAI = require("openai"); // OpenAI gen script
+const Groq = require("groq-sdk"); // Groq gen script
 
 const dotenv = require("dotenv");
 dotenv.config();
@@ -74,28 +77,15 @@ async function generateScript(
       console.error("Error calling Gemini API:", err);
       return "Gemini API error.";
     }
+  } else if (chatbot === "OpenAI"){
+    return callOpenAI(duration, topic, writingStyles,rawText);
+  } else if (chatbot === "Groq") {
+    return callGroq(prompt);
+  } else if (chatbot === "DeepSeek") {
+    return callDeepSeek(prompt);
   } else {
     return "Chatbot is not available. Please try again later.";
   }
-}
-
-async function callHuggingFace(prompt) {
-  const response = await fetch(
-    "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        inputs: prompt,
-      }),
-    }
-  );
-
-  const data = await response.json();
-  return data[0]?.generated_text || "No response";
 }
 
 async function crawlWikipedia(topic) {
@@ -214,6 +204,111 @@ async function crawlNature(topic) {
   } catch (error) {
     console.error("Lỗi crawl Nature:", error.message);
     throw new Error("Failed to crawl Nature.");
+  }
+}
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENROUTER_API_KEY,
+  baseURL: "https://openrouter.ai/api/v1",
+});
+
+async function callOpenAI(duration, topic, writingStyles, rawText) {
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "openai/gpt-3.5-turbo",
+      messages: [
+        {
+          role: "user",
+          content: `Bạn là một biên kịch chuyên viết nội dung video khoa học giáo dục.
+
+        Chỉ sử dụng NỘI DUNG dưới đây từ các nguồn đáng tin cậy (Wikipedia, PubMed, Nature), hãy viết một kịch bản video giáo dục khoa học hấp dẫn, dễ hiểu.
+
+        **Yêu cầu nghiêm ngặt:**
+        - KHÔNG được bịa đặt thông tin.
+        - Được phép tóm tắt, kết hợp, hoặc diễn giải nội dung nếu cần.
+        - Phong cách thân thiện, khoa học và dễ tiếp cận cho học sinh cấp 3 hoặc sinh viên đại học.
+        - Độ dài video mục tiêu: ${duration}.
+        - Văn phong: ${writingStyles}.
+        - Bắt đầu bằng một câu thu hút như "Hãy cùng khám phá..." hoặc tương tự.
+        - Trả lời hoàn toàn bằng tiếng Việt.
+        - Chia kịch bản theo mốc thời gian, ví dụ: "00:00 - 00:30", "00:30 - 01:00", v.v.
+        - Mỗi đoạn phải dài từ **15 giây đến 60 giây**, mỗi đoạn không được dài quá 60 giây.
+        - Đoạn cuối phải kết thúc đúng vào mốc **${duration}**.
+        - Định dạng mỗi đoạn như sau:
+        "** [Tên đoạn: thời gian] **:\n[Nội dung đoạn kịch bản]"
+        - Khi rõ tên đoạn, tránh viết chung chung.
+        - Sau mỗi đoạn, gợi ý các yếu tố hình ảnh và âm thanh như nhạc nền, hiệu ứng chữ, nút kêu gọi hành động (CTA). Viết các yếu tố này trong dấu ngoặc, ví dụ: (Nhạc nền sôi động), (Hiện logo và email), (Hiệu ứng chữ cho nút Đăng ký).
+
+        **Chủ đề:** ${topic} 
+        **Nội dung bắt buộc sử dụng** (không được thêm nguồn khác ngoài phần này):
+
+        """
+        ${rawText}
+        """
+        `,
+        },
+      ],
+    });
+
+    console.log("OpenAI: ", completion.choices[0].message.content);
+    return completion.choices[0].message.content;
+  } catch (error) {
+    console.error("Error calling OpenAI API:", error.response?.data || error.message);
+    return "OpenAI API error.";
+  }
+}
+
+const client = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
+});
+
+async function callGroq(prompt) {
+  try {
+    const chatCompletion = await client.chat.completions.create({
+      messages: [
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      model: "llama3-70b-8192",
+    });
+
+    console.log("Groq: ", chatCompletion.choices[0].message.content);
+    return chatCompletion.choices[0].message.content;
+  } catch (error) {
+    console.error("Error calling Groq API:", error.response?.data || error.message);
+    return "Groq API error.";
+  }
+}
+
+async function callDeepSeek(prompt) {
+  try {
+    const response = await axios.post(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        model: "deepseek/deepseek-r1:free",
+        messages: [
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+      },
+      {
+        headers: {
+            Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+            "Content-Type": "application/json",
+        }
+      }
+    );
+
+    console.log("Message", response.data.choices[0].message);
+    console.log("Deepseek: ", response.data.choices[0].message.content);
+    return response.data.choices[0].message.content;
+  } catch (error) {
+    console.error("Error calling DeepSeek API:", error.response?.data || error.message);
+    return "DeepSeek API error.";
   }
 }
 

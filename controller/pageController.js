@@ -122,10 +122,10 @@ controller.showProfile = async (req, res) => {
 
 controller.genScript = async (req, res) => {
   const { topic, duration, chatbot, writingStyles } = req.body;
-  console.log("Topic received:", topic + " Duration:", duration); 
+  console.log("Topic received:", topic + " Duration:", duration, " Chatbot:", chatbot); 
 
   if (!topic) return res.status(400).json({ success: false, message: "No topic provided" });
-  if (chatbot !== "Gemini") return res.status(400).json({ success: false, message: "Chatbot not available" });  
+  if (chatbot !== "Gemini" && chatbot !== "Groq" && chatbot !== "OpenAI" && chatbot !== "DeepSeek") return res.status(400).json({ success: false, message: "Chatbot not available" });  
   const rawText = await crawlWikipedia(topic);
   const pubmedText = await crawlPubMed(topic); 
   const natureText = await crawlNature(topic);
