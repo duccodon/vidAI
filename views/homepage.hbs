@@ -1,4 +1,4 @@
-<div class="scrollbar fixed top-[3.8rem] sm:top-[5.4rem] left-[100px] h-[calc(100vh-5*1vh-3.8rem)] sm:h-[calc(100vh-5*1vh-7rem)] md:h-[calc(100vh-5*1vh-2rem)] w-[100%] md:w-[93%] bg-white rounded-[1rem] border border-[#ccc] overflow-y-auto overflow-x-hidden z-3">
+<div class="fixed top-[3.8rem] sm:top-[5.4rem] left-[100px] h-[calc(100vh-5*1vh-3.8rem)] sm:h-[calc(100vh-5*1vh-7rem)] md:h-[calc(100vh-5*1vh-2rem)] w-[100%] md:w-[93%] bg-white rounded-[1rem] border border-[#ccc] overflow-y-auto overflow-x-hidden z-3">
   <div id="firstPage" class="mx-4 my-auto items-center gap-[1rem] py-[1rem] md:flex hidden">
     <img
     src="data:image/jpeg;base64,{{currentUser.profile_picture}}"
@@ -31,9 +31,16 @@
     </div>
   </div>
 
+
   <!-- Section to choose bot and style -->
-  <div class="scrollbar fixed top-[3.8rem] sm:top-[5.4rem] left-[100px] h-[calc(100vh-5*1vh-3.8rem)] sm:h-[calc(100vh-5*1vh-7rem)] md:h-[calc(100vh-5*1vh-2rem)] w-[100%] md:w-[93%] bg-white rounded-[1rem] border border-[#ccc] overflow-y-auto overflow-x-hidden z-3" id="secondPage" style="display: none;">
-    <div class="flex flex-row mx-4 my-auto gap-[3rem] py-[1rem]">
+  <div class="fixed top-[3.8rem] sm:top-[5.4rem] left-[100px] h-[calc(100vh-5*1vh-3.8rem)] sm:h-[calc(100vh-5*1vh-7rem)] md:h-[calc(100vh-5*1vh-2rem)] w-[100%] md:w-[93%] bg-white rounded-[1rem] border border-[#ccc] overflow-y-auto overflow-x-hidden z-3" id="secondPage" style="display: none;">
+    <div class="flex flex-row justify-between mx-4 my-auto gap-[3rem] py-[1rem]">
+      <div class="flex items-center">
+        <div id="returnTopicBtn" class="inline-block px-[2rem] py-[.6rem] font-medium cursor-pointer transition ease-in-out duration-300 text-sm hover:opacity-80 bg-white text-black border border-black border-solid rounded-[.7rem] mt-4">
+          Back
+        </div>
+      </div>
+
       <div>
         <div class="text-[20px] font-medium">Select Chatbot</div>
         <div class="flex flex-col gap-2">
@@ -79,10 +86,47 @@
         </div>
       </div>
     </div>
-    <div class="flex justify-center w-full mt-4">
-      <div id="scriptDisplay"
-        class="px-6 py-4 text-base whitespace-pre-wrap text-center border border-black rounded-md min-h-[150px] w-[95%] max-w-[800px]">
-        No content to display
+    <div class="flex flex-row justify-between min-h-[150px] h-[600px]">
+      <div class="black flex justify-center w-full mt-4">
+        <textarea id="scriptDisplay"
+          class="scrollbar px-6 py-4 text-base text-center border border-black rounded-md min-h-[150px] w-[95%] max-w-[800px]"
+          style="resize: vertical; white-space: pre-wrap;"
+          placeholder="Your script will be displayed here..." readonly
+        ></textarea>
+      </div>
+
+      <div class="flex justify-center items-center mr-4">
+        <button id="finishScriptBtn"
+          class="plus-button inline-block px-[2rem] py-[.6rem] font-medium cursor-pointer transition ease-in-out duration-300 text-sm hover:opacity-80 bg-white text-black border border-black border-solid rounded-[.7rem]">
+          Finish Script
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Section to gen audio -->
+  <div id="thirdPage" style="display: none;" class="fixed top-[3.8rem] sm:top-[5.4rem] left-[100px] h-[calc(100vh-5*1vh-3.8rem)] sm:h-[calc(100vh-5*1vh-7rem)] md:h-[calc(100vh-5*1vh-2rem)] w-[100%] md:w-[93%] bg-white rounded-[1rem] border border-[#ccc] overflow-y-auto overflow-x-hidden z-3">
+    <div class="text-2xl font-bold">You're now on the next step after finishing the script!</div>
+    <div class="flex flex-row justify-between mx-4 my-auto gap-[3rem] py-[1rem]">
+      <div class="flex items-center">
+        <div id="returnScriptBtn" class="inline-block px-[2rem] py-[.6rem] font-medium cursor-pointer transition ease-in-out duration-300 text-sm hover:opacity-80 bg-white text-black border border-black border-solid rounded-[.7rem] mt-4">
+          Back
+        </div>
+      </div>
+
+      <div>
+        test
+      </div>
+
+      <div>
+        <div class="text-[20px] font-medium">Select Writing Style</div>
+      </div>
+
+      <div class="flex items-center">
+        <div id="next3Button" class="plus-button inline-block px-[2rem] py-[.6rem] font-medium cursor-pointer transition ease-in-out duration-300 text-sm hover:opacity-80 bg-white text-black border border-black border-solid rounded-[.7rem] mt-4">
+          Next
+        </div>
       </div>
     </div>
   </div>
@@ -148,6 +192,13 @@
     });
   });
 
+  document.getElementById("returnTopicBtn").addEventListener("click", function () {
+    document.getElementById("secondPage").style.display = "none";
+  });
+
+  document.getElementById("returnScriptBtn").addEventListener("click", function () {
+    document.getElementById("thirdPage").style.display = "none";
+  });
 
   document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("postButton").addEventListener("click", async function () {
@@ -163,7 +214,6 @@
         return;
       }
 
-      document.getElementById("firstPage").style.display = "none";
       document.getElementById("secondPage").style.display = "block";
 
       // Pass the topic and duration to the next page as needed
@@ -197,7 +247,10 @@
         selectedWritingStyles = customStyle;
       }
 
+      const scriptDisplay = document.getElementById("scriptDisplay");
       try {
+        scriptDisplay.textContent = "In process...";
+
         const res = await fetch("/homepage/api/generate-script", {
           method: "POST",
           headers: {
@@ -212,9 +265,10 @@
         });
 
         const data = await res.json();
-        const scriptDisplay = document.getElementById("scriptDisplay");
+        
         if (data.success) {
           scriptDisplay.textContent = data.script;
+          scriptDisplay.removeAttribute("readonly"); 
           scriptDisplay.scrollIntoView({ behavior: "smooth" }); // Optional: scroll to it
         }else {
           scriptDisplay.textContent = "Error: " + data.message;
@@ -224,6 +278,19 @@
       }
     });
 
+
+    //Handle finish script button click
+    document.getElementById("finishScriptBtn").addEventListener("click", async function () {
+      const script = document.getElementById("scriptDisplay").value.trim();
+      if (!script) {
+        alert("Please generate a script first.");
+        return;
+      }
+
+      document.getElementById("thirdPage").style.display = "block";
+      // Redirect to the next page or perform any action you want
+      //window.location.href = "/homepage/gen-audio";
+    });
   });
 
 
