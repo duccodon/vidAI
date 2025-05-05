@@ -8,9 +8,7 @@ const moment = require('moment');
 const cron = require('node-cron');
 const axios = require('axios');
 const models = require('./models');
-
 const path = require("path");
-const models = require("./models"); // Import models to use Sequelize
 
 
 // Flash messages setup
