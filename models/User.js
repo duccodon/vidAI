@@ -38,7 +38,11 @@ module.exports = (sequelize, DataTypes) => {
       isVerified: {           
         type: DataTypes.BOOLEAN,
         defaultValue: false,  
-      }
+      },
+      youtubeChannelId: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
     },
     {
       sequelize,
