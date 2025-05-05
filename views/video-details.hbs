@@ -1,0 +1,54 @@
+<div class="max-w-5xl mx-auto p-6 space-y-6 bg-white rounded-xl shadow-lg mt-6">
+
+  <!-- Thông tin video -->
+  <div>
+    <h1 class="text-2xl font-bold text-gray-800">{{video.title}}</h1>
+    <p class="text-sm text-gray-500">Thời lượng: {{video.duration}} giây</p>
+    <p class="text-sm text-gray-500 mb-2">Chủ đề: {{video.topic}}</p>
+    {{#if video.description}}
+      <p class="text-gray-600 italic">📄 {{video.description}}</p>
+    {{/if}}
+  </div>
+
+  <!-- Trình phát video -->
+  <div class="rounded overflow-hidden border border-gray-300">
+    <video class="w-full rounded-md" controls>
+      <source src="{{video.filePath}}" type="video/mp4">
+      Trình duyệt không hỗ trợ video.
+    </video>
+  </div>
+
+  <!-- Thanh công cụ chỉnh sửa -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-6">
+    <a href="/video/{{video.id}}/trim" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg text-center shadow">
+      ✂️ Cắt Video
+    </a>
+
+    <a href="/video/{{video.id}}/mute" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg text-center shadow">
+      🔇 Tắt Âm
+    </a>
+
+    <a href="/video/{{video.id}}/resize" class="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg text-center shadow">
+      📏 Resize
+    </a>
+
+    <a href="/video/{{video.id}}/text-overlay" class="bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg text-center shadow">
+      📝 Thêm Chữ
+    </a>
+
+    <a href="/video/{{video.id}}/logo-overlay" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg text-center shadow">
+      🖼️ Chèn Logo
+    </a>
+
+    <form action="/video/{{video.id}}/save-variant" method="POST">
+      <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg shadow">
+        💾 Lưu Bản Chỉnh
+      </button>
+    </form>
+  </div>
+
+  <!-- Quay lại -->
+  <div class="text-right">
+    <a href="/videos" class="text-blue-600 hover:underline text-sm">← Quay lại danh sách</a>
+  </div>
+</div>

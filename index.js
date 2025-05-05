@@ -6,6 +6,10 @@ const port = process.env.PORT || 3000;
 const expressHbs = require("express-handlebars");
 const moment = require('moment'); 
 
+const path = require("path");
+const models = require("./models"); // Import models to use Sequelize
+
+
 // Flash messages setup
 app.use(session({
   secret: 'your-secret-key',
@@ -77,7 +81,7 @@ app.engine(
 );
 app.set("view engine", "hbs");
 
-// Middleware to parse JSON
+// Middleware to parse JSON 
 app.use(express.json());
 app.use(express .urlencoded({ extended: false }));
 
@@ -85,7 +89,7 @@ app.use(express .urlencoded({ extended: false }));
 app.get("/", (req,res) => res.redirect("/Login"));
 
 app.use("/Homepage", ensureAuthenticated, require("./routes/pageRouter"));
-app.use("/EditVideo", ensureAuthenticated, require("./routes/editVideoRouter"));
+app.use("/Video", ensureAuthenticated, require("./routes/videoRouter"));
 app.use("/Profile", ensureAuthenticated, require("./routes/profileRouter"));
 
 app.use("/Login", require("./routes/loginRouter"));

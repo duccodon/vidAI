@@ -89,7 +89,7 @@ controller.showHomepage = async (req, res) => {
   res.render("homepage", { headerName: "Home", page: 1 });
 };
 
-controller.showEditVideo = async (req, res) => {
+controller.showVideo = async (req, res) => {
   const userId = req.session.userId; 
 
   res.locals.currentUser = await models.User.findByPk(userId, (err, user) => {
@@ -99,7 +99,51 @@ controller.showEditVideo = async (req, res) => {
   });
   res.locals.loggingInUser = res.locals.currentUser;
 
-  res.render("editVideo", { headerName: "Edit video", page: 2 });
+  try {
+    const userId = req.session.userId;
+
+    if (!userId) {
+      return res.redirect("/login"); // hoặc trả lỗi nếu chưa đăng nhập
+    }
+
+    // Lấy user hiện tại
+    const currentUser = await models.User.findByPk(userId);
+
+    // Lấy tất cả video của user này
+    const userVideos = await models.Video.findAll({
+      where: { userId },
+      order: [["createdAt", "DESC"]],
+      include: [
+        {
+          model: models.User,
+          attributes: ["username", "email"], // Chỉ lấy các thuộc tính cần thiết
+        },
+      ],
+    });
+
+    // Chuẩn bị dữ liệu gửi về giao diện
+    const videos = userVideos.map(video => ({
+      id: video.id,
+      title: video.title,
+      duration: video.duration,
+      description: video.description,
+      filename: video.filePath,
+      topic: video.topic,
+      createdAt: video.createdAt,
+    }));
+
+    // Gửi dữ liệu về giao diện
+    res.render("video", {
+      headerName: "Danh sách video",
+      page: 5,
+      currentUser,
+      videos,
+    });
+
+  } catch (error) {
+    console.error("Lỗi khi load video:", error);
+    res.status(500).send("Lỗi khi lấy danh sách video");
+  }
 };
 
 controller.showProfile = async (req, res) => {
