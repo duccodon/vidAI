@@ -24,15 +24,18 @@ async function generateScript(
       - Do NOT invent facts.
       - Combine, summarize, and expand the text if needed.
       - The style should be friendly, scientific, and accessible for high school or university students.
-      - Aim the content for duration: ${duration}.
+      - Aim the content for duration: ${duration} (IMPORTANT!).
       - Writing styles: ${writingStyles}
       - Start with a hook like "Let’s explore the topic..." or anything similar.
       - Response only in Vietnamese.
-      - Write the script by time section, e.g., "00:00 - 00:30", "00:30 - 01:00", etc.
-      - Use the following format: "** [Name of this section: 00:00 - 00:30] **: \n[script content relating to this timeline]\n\nIdea 1: \nText:[content of this idea]\nVisual:[Suggest image prompt to generate by AI]\nIdea 2: \nText:[content of this idea]\nVisual:[Suggest image prompt to generate by AI]\n...".
+      - Each segment must be between **30 seconds and 60 seconds**, must not be longer than 60 seconds.
+      - Write the script by time section, e.g., "00:00 - 00:30", "00:30 - 01:00", etc (IMPORTANT!).
+      - Must include ALL time sections from 00:00 to 03:00 with NO gaps or missing segments (IMPORTANT!).
+      - Use the following format: "** [Name of this section: 00:00 - 00:30] **: \n[script content relating to this timeline]\n\nIdea 1: \nText:[content of this idea]\nVisual:[Suggest image prompt to generate by AI]\nIdea 2: \nText:[content of this idea]\nVisual:[Suggest image prompt to generate by AI]\n..." (IMPORTANT!).
       - Do not add () in script content of each section.
       - Each section must has only 1 to 3 ideas
       - After each sections, suggest visual and audio elements, such as background music, text animations, call-to-action buttons. Write these elements in parentheses, like: (Upbeat background music), (Display email and logo), (Text animation for Subscribe button).
+      - Double check total time coverage to ensure script reaches full 3 minutes and all sections are accounted for (IMPORTANT!).
   
       Topic: ${topic}
       Content to use: content from Wikipedia, PubMed, and Nature in order, seperate by 2 empty lines.
@@ -221,32 +224,32 @@ async function callOpenAI(duration, topic, writingStyles, rawText) {
       messages: [
         {
           role: "user",
-          content: `Bạn là một biên kịch chuyên viết nội dung video khoa học giáo dục.
-
-        Chỉ sử dụng NỘI DUNG dưới đây từ các nguồn đáng tin cậy (Wikipedia, PubMed, Nature), hãy viết một kịch bản video giáo dục khoa học hấp dẫn, dễ hiểu.
-
-        **Yêu cầu nghiêm ngặt:**
-        - KHÔNG được bịa đặt thông tin.
-        - Được phép tóm tắt, kết hợp, hoặc diễn giải nội dung nếu cần.
-        - Phong cách thân thiện, khoa học và dễ tiếp cận cho học sinh cấp 3 hoặc sinh viên đại học.
-        - Độ dài video mục tiêu: ${duration}.
-        - Văn phong: ${writingStyles}.
-        - Bắt đầu bằng một câu thu hút như "Hãy cùng khám phá..." hoặc tương tự.
-        - Trả lời hoàn toàn bằng tiếng Việt.
-        - Chia kịch bản theo mốc thời gian, ví dụ: "00:00 - 00:30", "00:30 - 01:00", v.v.
-        - Mỗi đoạn phải dài từ **15 giây đến 60 giây**, mỗi đoạn không được dài quá 60 giây.
-        - Đoạn cuối phải kết thúc đúng vào mốc **${duration}**.
-        - Định dạng mỗi đoạn như sau:
-        "** [Tên đoạn: thời gian] **:\n[Nội dung đoạn kịch bản]"
-        - Khi rõ tên đoạn, tránh viết chung chung.
-        - Sau mỗi đoạn, gợi ý các yếu tố hình ảnh và âm thanh như nhạc nền, hiệu ứng chữ, nút kêu gọi hành động (CTA). Viết các yếu tố này trong dấu ngoặc, ví dụ: (Nhạc nền sôi động), (Hiện logo và email), (Hiệu ứng chữ cho nút Đăng ký).
-
-        **Chủ đề:** ${topic} 
-        **Nội dung bắt buộc sử dụng** (không được thêm nguồn khác ngoài phần này):
-
-        """
-        ${rawText}
-        """
+          content: `You are a scientific scriptwriter for educational videos.
+  
+      Using ONLY the following content from trusted sources (Wikipedia, PubMed, Nature), create a clear and engaging script for an educational science video. 
+  
+      Guidelines:
+      - Do NOT invent facts.
+      - Combine, summarize, and expand the text if needed.
+      - The style should be friendly, scientific, and accessible for high school or university students.
+      - Aim the content for duration: ${duration} (IMPORTANT!).
+      - Writing styles: ${writingStyles}
+      - Start with a hook like "Let’s explore the topic..." or anything similar.
+      - Response only in Vietnamese.
+      - Each segment must be between **30 seconds and 60 seconds**, must not be longer than 60 seconds.
+      - Write the script by time section, e.g., "00:00 - 00:30", "00:30 - 01:00", etc (IMPORTANT!).
+      - Must include ALL time sections from 00:00 to 03:00 with NO gaps or missing segments (IMPORTANT!).
+      - Use the following format: "** [Name of this section: 00:00 - 00:30] **: \n[script content relating to this timeline]\n\nIdea 1: \nText:[content of this idea]\nVisual:[Suggest image prompt to generate by AI]\nIdea 2: \nText:[content of this idea]\nVisual:[Suggest image prompt to generate by AI]\n..." (IMPORTANT!).
+      - Do not add () in script content of each section.
+      - Each section must has only 1 to 3 ideas
+      - After each sections, suggest visual and audio elements, such as background music, text animations, call-to-action buttons. Write these elements in parentheses, like: (Upbeat background music), (Display email and logo), (Text animation for Subscribe button).
+      - Double check total time coverage to ensure script reaches full 3 minutes and all sections are accounted for (IMPORTANT!).
+  
+      Topic: ${topic}
+      Content to use: content from Wikipedia, PubMed, and Nature in order, seperate by 2 empty lines.
+      """ 
+      ${rawText}
+      """
         `,
         },
       ],
@@ -270,33 +273,32 @@ async function callGroq(duration, topic, writingStyles, rawText) {
       messages: [
         {
           role: "user",
-          content: `Bạn là một biên kịch chuyên viết nội dung video khoa học giáo dục.
-
-          Chỉ sử dụng NỘI DUNG dưới đây từ các nguồn đáng tin cậy (Wikipedia, PubMed, Nature), hãy viết một kịch bản video giáo dục khoa học hấp dẫn, dễ hiểu.
+          content: `You are a scientific scriptwriter for educational videos.
   
-          **Yêu cầu nghiêm ngặt:**
-          - KHÔNG được bịa đặt thông tin.
-          - Chỉ được trả lời bằng tiếng Việt.
-          - Được phép tóm tắt, kết hợp, hoặc diễn giải nội dung nếu cần.
-          - Phong cách thân thiện, khoa học và dễ tiếp cận cho học sinh cấp 3 hoặc sinh viên đại học.
-          - Độ dài video mục tiêu: ${duration}.
-          - Văn phong: ${writingStyles}.
-          - Bắt đầu bằng một câu thu hút như "Hãy cùng khám phá..." hoặc tương tự.
-          - Trả lời hoàn toàn bằng tiếng Việt.
-          - Chia kịch bản theo mốc thời gian, ví dụ: "00:00 - 00:30", "00:30 - 01:00", v.v.
-          - Mỗi đoạn phải dài từ **15 giây đến 60 giây**, mỗi đoạn không được dài quá 60 giây.
-          - Đoạn cuối phải kết thúc đúng vào mốc **${duration}**.
-          - Định dạng mỗi đoạn như sau:
-          "** [Tên đoạn: thời gian] **:\n[Nội dung đoạn kịch bản]"
-          - Khi rõ tên đoạn, tránh viết chung chung.
-          - Sau mỗi đoạn, gợi ý các yếu tố hình ảnh và âm thanh như nhạc nền, hiệu ứng chữ, nút kêu gọi hành động (CTA). Viết các yếu tố này trong dấu ngoặc, ví dụ: (Nhạc nền sôi động), (Hiện logo và email), (Hiệu ứng chữ cho nút Đăng ký).
+      Using ONLY the following content from trusted sources (Wikipedia, PubMed, Nature), create a clear and engaging script for an educational science video. 
   
-          **Chủ đề:** ${topic} 
-          **Nội dung bắt buộc sử dụng** (không được thêm nguồn khác ngoài phần này):
+      Guidelines:
+      - Do NOT invent facts.
+      - Combine, summarize, and expand the text if needed.
+      - The style should be friendly, scientific, and accessible for high school or university students.
+      - Aim the content for duration: ${duration} (IMPORTANT!).
+      - Writing styles: ${writingStyles}
+      - Start with a hook like "Let’s explore the topic..." or anything similar.
+      - Response only in Vietnamese.
+      - Each segment must be between **30 seconds and 60 seconds**, must not be longer than 60 seconds.
+      - Write the script by time section, e.g., "00:00 - 00:30", "00:30 - 01:00", etc (IMPORTANT!).
+      - Must include ALL time sections from 00:00 to 03:00 with NO gaps or missing segments (IMPORTANT!).
+      - Use the following format: "** [Name of this section: 00:00 - 00:30] **: \n[script content relating to this timeline]\n\nIdea 1: \nText:[content of this idea]\nVisual:[Suggest image prompt to generate by AI]\nIdea 2: \nText:[content of this idea]\nVisual:[Suggest image prompt to generate by AI]\n..." (IMPORTANT!).
+      - Do not add () in script content of each section.
+      - Each section must has only 1 to 3 ideas
+      - After each sections, suggest visual and audio elements, such as background music, text animations, call-to-action buttons. Write these elements in parentheses, like: (Upbeat background music), (Display email and logo), (Text animation for Subscribe button).
+      - Double check total time coverage to ensure script reaches full 3 minutes and all sections are accounted for (IMPORTANT!).
   
-          """
-          ${rawText}
-          """
+      Topic: ${topic}
+      Content to use: content from Wikipedia, PubMed, and Nature in order, seperate by 2 empty lines.
+      """ 
+      ${rawText}
+      """
           `,
         },
       ],
@@ -320,32 +322,32 @@ async function callDeepSeek(duration, topic, writingStyles, rawText) {
         messages: [
           {
             role: "user",
-            content: `Bạn là một biên kịch chuyên viết nội dung video khoa học giáo dục.
-
-          Chỉ sử dụng NỘI DUNG dưới đây từ các nguồn đáng tin cậy (Wikipedia, PubMed, Nature), hãy viết một kịch bản video giáo dục khoa học hấp dẫn, dễ hiểu.
+            content: `You are a scientific scriptwriter for educational videos.
   
-          **Yêu cầu nghiêm ngặt:**
-          - KHÔNG được bịa đặt thông tin.
-          - Được phép tóm tắt, kết hợp, hoặc diễn giải nội dung nếu cần.
-          - Phong cách thân thiện, khoa học và dễ tiếp cận cho học sinh cấp 3 hoặc sinh viên đại học.
-          - Độ dài video mục tiêu: ${duration}.
-          - Văn phong: ${writingStyles}.
-          - Bắt đầu bằng một câu thu hút như "Hãy cùng khám phá..." hoặc tương tự.
-          - Trả lời hoàn toàn bằng tiếng Việt.
-          - Chia kịch bản theo mốc thời gian, ví dụ: "00:00 - 00:30", "00:30 - 01:00", v.v.
-          - Mỗi đoạn phải dài từ **15 giây đến 60 giây**, mỗi đoạn không được dài quá 60 giây.
-          - Đoạn cuối phải kết thúc đúng vào mốc **${duration}**.
-          - Định dạng mỗi đoạn như sau:
-          "** [Tên đoạn: thời gian] **:\n[Nội dung đoạn kịch bản]"
-          - Khi rõ tên đoạn, tránh viết chung chung.
-          - Sau mỗi đoạn, gợi ý các yếu tố hình ảnh và âm thanh như nhạc nền, hiệu ứng chữ, nút kêu gọi hành động (CTA). Viết các yếu tố này trong dấu ngoặc, ví dụ: (Nhạc nền sôi động), (Hiện logo và email), (Hiệu ứng chữ cho nút Đăng ký).
+      Using ONLY the following content from trusted sources (Wikipedia, PubMed, Nature), create a clear and engaging script for an educational science video. 
   
-          **Chủ đề:** ${topic} 
-          **Nội dung bắt buộc sử dụng** (không được thêm nguồn khác ngoài phần này):
+      Guidelines:
+      - Do NOT invent facts.
+      - Combine, summarize, and expand the text if needed.
+      - The style should be friendly, scientific, and accessible for high school or university students.
+      - Aim the content for duration: ${duration} (IMPORTANT!).
+      - Writing styles: ${writingStyles}
+      - Start with a hook like "Let’s explore the topic..." or anything similar.
+      - Response only in Vietnamese.
+      - Each segment must be between **30 seconds and 60 seconds**, must not be longer than 60 seconds.
+      - Write the script by time section, e.g., "00:00 - 00:30", "00:30 - 01:00", etc (IMPORTANT!).
+      - Must include ALL time sections from 00:00 to 03:00 with NO gaps or missing segments (IMPORTANT!).
+      - Use the following format: "** [Name of this section: 00:00 - 00:30] **: \n[script content relating to this timeline]\n\nIdea 1: \nText:[content of this idea]\nVisual:[Suggest image prompt to generate by AI]\nIdea 2: \nText:[content of this idea]\nVisual:[Suggest image prompt to generate by AI]\n..." (IMPORTANT!).
+      - Do not add () in script content of each section.
+      - Each section must has only 1 to 3 ideas
+      - After each sections, suggest visual and audio elements, such as background music, text animations, call-to-action buttons. Write these elements in parentheses, like: (Upbeat background music), (Display email and logo), (Text animation for Subscribe button).
+      - Double check total time coverage to ensure script reaches full 3 minutes and all sections are accounted for (IMPORTANT!).
   
-          """
-          ${rawText}
-          """
+      Topic: ${topic}
+      Content to use: content from Wikipedia, PubMed, and Nature in order, seperate by 2 empty lines.
+      """ 
+      ${rawText}
+      """
           `,
           },
         ],

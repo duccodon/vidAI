@@ -62,12 +62,18 @@ function parseScriptWithIdeas(script) {
 }
 
 function extractIdeas(content) {
-  const ideaBlocks = content.split(/(?:^|\n)Idea\s*\d*:\s*/).slice(1);
+  // Remove trailing content that isn't part of an Idea block (e.g., "(Nhạc nền...)")
+  const cleanedContent = content.split(/^\(/m)[0].trim();
+  
+  // Split by "Idea" headers
+  const ideaBlocks = cleanedContent.split(/(?:^|\n)Idea\s*\d*:\s*/).slice(1);
   const ideas = [];
 
   for (const block of ideaBlocks) {
-    const textMatch = block.match(/Text:\s*([\s\S]*?)\nVisual:/);
-    const visualMatch = block.match(/Visual:\s*([\s\S]*?)\n/);
+    // Match Text: (everything until Visual: or end)
+    const textMatch = block.match(/Text:\s*([\s\S]*?)(?:\nVisual:|$)/);
+    // Match Visual: (everything until newline or end)
+    const visualMatch = block.match(/Visual:\s*([\s\S]*?)(?:\n|$)/);
 
     ideas.push({
       text: textMatch ? textMatch[1].trim() : null,
