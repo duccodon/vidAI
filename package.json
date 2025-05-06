@@ -14,7 +14,6 @@
   "dependencies": {
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@google-cloud/text-to-speech": "^6.0.1",
-    "@ffmpeg/ffmpeg": "^0.12.15",
     "@google/generative-ai": "^0.24.1",
     "axios": "^1.9.0",
     "bcrypt": "^5.1.1",

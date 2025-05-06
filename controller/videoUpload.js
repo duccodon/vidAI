@@ -276,6 +276,8 @@ controller.videoSync = async (req, res) => {
   res.render("video-sync", {
     headerName: "Đồng bộ video",
     page: 6,
+    layout: 'layout',
+    title: 'Đồng bộ video',
     metadata: {
       audioUrl,
       title,
