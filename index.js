@@ -9,7 +9,10 @@ const cron = require('node-cron');
 const axios = require('axios');
 const models = require('./models');
 const path = require("path");
-
+const ffmpeg = require('fluent-ffmpeg');
+const bodyParser = require('body-parser');
+const fs = require('fs');
+const { v4: uuid } = require('uuid');
 
 // Flash messages setup
 app.use(session({
@@ -77,6 +80,7 @@ app.engine(
                 return then.fromNow(); 
               }
             },
+            json: (context) => JSON.stringify(context),
         },
     })
 );
@@ -203,9 +207,22 @@ app.get("/", (req,res) => res.redirect("/Login"));
 app.use("/Homepage", ensureAuthenticated, require("./routes/pageRouter"));
 app.use("/Video", ensureAuthenticated, require("./routes/videoRouter"));
 app.use("/Profile", ensureAuthenticated, require("./routes/profileRouter"));
-
 app.use("/Login", require("./routes/loginRouter"));
 //app.use("/CreateAccount", require("./routes/createRouter"));
+
+
+// Utility: download a remote URL to local file
+async function download(url, dest) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Download failed: ' + url);
+  const fileStream = fs.createWriteStream(dest);
+  await new Promise((r, e) => {
+    res.body.pipe(fileStream);
+    res.body.on("error", e);
+    fileStream.on("finish", r);
+  });
+}
+
 
 
 app.listen(port, () => console.log(`listening on port ${port}`));

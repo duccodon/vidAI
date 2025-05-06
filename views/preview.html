@@ -117,7 +117,7 @@
 
     <div class="mb-10">
       <h2 class="text-xl font-semibold mb-4 text-gray-700">🎥 Video Preview</h2>
-      <canvas id="previewCanvas" class="w-full border border-gray-300 rounded-xl shadow" height="360"></canvas>
+      <video id="renderedVideo" controls class="w-full border border-gray-300 rounded-xl shadow mt-4" style="display:none;"></video>
     </div>
     
 
@@ -248,7 +248,55 @@
     });
 
     wavesurfer.load('/public/img/assets/audio1.mp3');
+
+
+    const renderBtn = document.getElementById('renderBtn');
+    const renderedVideo = document.getElementById('renderedVideo');
+
+    renderBtn.addEventListener('click', async () => {
+      // Lấy data timeline từ manager
+      const timeline = imageManager.getAllImages();
+      if (!timeline.length) {
+        return alert('Chưa có ảnh nào trên timeline!');
+      }
+
+      // URL của audio (có thể là public URL hoặc endpoint server lưu audio tạm)
+      const audioUrl = '/public/img/assets/audio1.mp3';
+
+      // Hiển thị spinner/loading nếu cần
+      renderBtn.disabled = true;
+      renderBtn.textContent = 'Rendering...';
+
+      try {
+        const resp = await fetch('/api/render', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ timeline, audioUrl })
+        });
+        if (!resp.ok) throw new Error(`Server error ${resp.status}`);
+        
+        // Nhận về MP4 dưới dạng blob
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+
+        // Gán vào video và hiển thị
+        renderedVideo.src = url;
+        renderedVideo.style.display = 'block';
+        renderedVideo.load();
+        renderedVideo.play();
+      } catch (err) {
+        console.error(err);
+        alert('Không render được video: ' + err.message);
+      } finally {
+        renderBtn.disabled = false;
+        renderBtn.textContent = 'Render MP4';
+      }
+    });
   </script>
+
+
+
+
   <script type="module">
     import { ImageTimelineManager } from '/public/js/imageTimelineManager.js';
 
@@ -262,7 +310,7 @@
       () => waveform.scrollWidth,
       () => wavesurfer.getDuration()
     );
-    window.imageManager = imageManager;  // 👈 Thêm dòng này để export ra global
+    window.imageManager = imageManager;  // export ra global
 
     const imageFilenames = [
       "image1.jpg", "image2.jpg", "image3.jpg", "image4.jpg", "image5.jpg",
@@ -273,22 +321,22 @@
       const img = document.createElement('img');
       img.src = `/public/img/assets/${filename}`;
       img.className = 'h-24 w-full object-cover border rounded-lg shadow cursor-pointer';
-      img.onclick = () => {
+      img.onclick = () => { //set selected image to preview
         selectedPreview.src = `/public/img/assets/${filename}`;
         console.log("Preview selected:", selectedPreview.src);
       };
       imageForm.appendChild(img);
     });
 
-    moveBtn.onclick = () => {
+    moveBtn.onclick = () => { // di chuyển ảnh từ preview vào timeline
       if (selectedPreview.src) {
         const src = selectedPreview.src;
         const start = imageManager.getNextAvailableStart();
-        imageManager.addImage(src, start, 5);
+        imageManager.addImage(src, start, 5); // thời gian mặc định là 5 giây
       }
     };
 
-    // Gọi từ console để debug
+      // Gọi từ console để debug
       window.getImageData = () => {
         const data = imageManager.getAllImages();
         console.log("Current timeline image data:", data);
