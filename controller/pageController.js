@@ -16,6 +16,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const { generateScript, crawlWikipedia, crawlPubMed, crawlNature } = require('../utils/dataScript'); 
+const { generateAudioScript } = require('../utils/audio');
 
 
 controller.showLogin = (req, res) => {
@@ -58,6 +59,7 @@ controller.login = async (req, res) => {
     }
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
+      console.log(await bcrypt.hash(password, 10));
       return res.render("login", {
         layout: "account",
         title: "Login",
@@ -165,39 +167,60 @@ controller.showProfile = async (req, res) => {
       return res.status(500).send("Error retrieving user information");
     }
 
-    let youtubeStats = null;
+    let stats = null;
     let historicalStats = [];
-    if (user.youtubeChannelId) {
+    if (user.youtubeChannelId && user.youtubeVideoId) {
       const apiKey = process.env.YOUTUBE_API_KEY;
       if (!apiKey) {
         throw new Error("YouTube API Key is missing.");
       }
-      const url = `https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id=${user.youtubeChannelId}&key=${apiKey}`;
-      
-      const response = await axios.get(url);
-      const channelData = response.data.items?.[0];
-      
-      if (channelData) {
-        youtubeStats = {
+
+      // Lấy thống kê kênh
+      const channelUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,contentDetails,statistics&id=${user.youtubeChannelId}&key=${apiKey}`;
+      const channelResponse = await axios.get(channelUrl);
+      const channelData = channelResponse.data.items?.[0];
+
+      // Lấy thống kê video
+      const videoUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${user.youtubeVideoId}&key=${apiKey}`;
+      const videoResponse = await axios.get(videoUrl);
+      const videoData = videoResponse.data.items?.[0];
+
+      if (channelData && videoData) {
+        stats = {
           channelTitle: channelData.snippet.title,
-          subscriberCount: parseInt(channelData.statistics.subscriberCount),
-          videoCount: parseInt(channelData.statistics.videoCount),
-          viewCount: parseInt(channelData.statistics.viewCount),
-          thumbnail: channelData.snippet.thumbnails.default.url,
+          subscriberCount: parseInt(channelData.statistics.subscriberCount) || 0,
+          channelVideoCount: parseInt(channelData.statistics.videoCount) || 0,
+          channelViewCount: parseInt(channelData.statistics.viewCount) || 0,
+          videoTitle: videoData.snippet.title,
+          viewCount: parseInt(videoData.statistics.viewCount) || 0,
+          likeCount: parseInt(videoData.statistics.likeCount) || 0,
+          commentCount: parseInt(videoData.statistics.commentCount) || 0,
+          thumbnail: videoData.snippet.thumbnails.default.url,
         };
 
-        if (models.ChannelStats) {
-          await models.ChannelStats.create({
+        if (models.VideoStats) {
+          await models.VideoStats.create({
             userId,
-            subscriberCount: youtubeStats.subscriberCount,
-            videoCount: youtubeStats.videoCount,
-            viewCount: youtubeStats.viewCount,
+            channelId: user.youtubeChannelId,
+            videoId: user.youtubeVideoId,
+            viewCount: stats.viewCount,
+            likeCount: stats.likeCount,
+            commentCount: stats.commentCount,
+            subscriberCount: stats.subscriberCount,
+            channelVideoCount: stats.channelVideoCount,
+            channelViewCount: stats.channelViewCount,
           });
 
-          historicalStats = await models.ChannelStats.findAll({
-            where: { userId },
+          // Lấy dữ liệu lịch sử trong 30 ngày qua
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+          historicalStats = await models.VideoStats.findAll({
+            where: { 
+              userId, 
+              videoId: user.youtubeVideoId,
+              recordedAt: { [Op.gte]: thirtyDaysAgo }
+            },
             order: [['recordedAt', 'ASC']],
-            limit: 7,
           });
         }
       }
@@ -205,28 +228,31 @@ controller.showProfile = async (req, res) => {
 
     res.locals.currentUser = user;
     res.locals.loggingInUser = user;
-    res.locals.youtubeStats = youtubeStats;
+    res.locals.stats = stats;
     res.locals.historicalStats = historicalStats.map(stat => ({
       date: stat.recordedAt.toISOString().split('T')[0],
-      subscriberCount: stat.subscriberCount,
-      videoCount: stat.videoCount,
       viewCount: stat.viewCount,
+      likeCount: stat.likeCount,
+      commentCount: stat.commentCount,
+      subscriberCount: stat.subscriberCount,
+      channelVideoCount: stat.channelVideoCount,
+      channelViewCount: stat.channelViewCount,
     }));
 
     res.render("profile", { 
       headerName: "Profile", 
       page: 3,
-      youtubeStats,
+      stats,
       historicalStats,
     });
   } catch (error) {
     console.error("Error in showProfile:", error.message);
     res.locals.currentUser = await models.User.findByPk(userId);
-    res.locals.youtubeStats = { error: error.message };
+    res.locals.stats = { error: error.message };
     res.render("profile", { 
       headerName: "Profile", 
       page: 3,
-      youtubeStats: null,
+      stats: null,
       historicalStats: [],
     });
   }
@@ -234,7 +260,7 @@ controller.showProfile = async (req, res) => {
 
 controller.updateProfile = async (req, res) => {
   const userId = req.session.userId;
-  const { username, bio, youtubeChannelId } = req.body;
+  const { username, bio, youtubeChannelId, youtubeVideoId } = req.body;
 
   try {
     const user = await models.User.findByPk(userId);
@@ -243,15 +269,13 @@ controller.updateProfile = async (req, res) => {
       return res.redirect('/profile');
     }
 
-    // Cập nhật thông tin
     user.username = username || user.username;
     user.bio = bio || user.bio;
     user.youtubeChannelId = youtubeChannelId || user.youtubeChannelId;
+    user.youtubeVideoId = youtubeVideoId || user.youtubeVideoId;
     
-    // Xử lý ảnh hồ sơ nếu có
     if (req.file) {
       user.profilePicture = fs.readFileSync(req.file.path).toString('base64');
-      // Xóa file tạm sau khi xử lý
       fs.unlinkSync(req.file.path);
     }
 
@@ -291,6 +315,12 @@ controller.genScript = async (req, res) => {
     console.error(err);
     return res.status(500).json({ success: false, message: "Error generating script" });
   }
+}
+
+controller.genAudio = async (req, res) => {
+  const {script} = req.body;
+
+  generateAudioScript(script);
 }
 
 module.exports = controller

@@ -1,6 +1,5 @@
 <div class="scrollbar fixed top-[3.8rem] sm:top-[5.4rem] left-[100px] h-[calc(100vh-5*1vh-3.8rem)] sm:h-[calc(100vh-5*1vh-7rem)] md:h-[calc(100vh-5*1vh-2rem)] w-[100%] md:w-[93%] bg-white rounded-[1rem] border border-[#ccc] overflow-y-auto overflow-x-hidden z-3">
   <div class="p-6">
-    <h2 class="text-2xl font-semibold mb-6">User Profile</h2>
 
     <!-- Thông tin người dùng -->
     <div class="flex items-center mb-6">
@@ -29,8 +28,13 @@
       </div>
       <div class="mb-4">
         <label for="youtubeChannelId" class="block text-sm font-medium text-gray-700">YouTube Channel ID</label>
-        <input type="text" id="youtubeChannelId" name="youtubeChannelId" value="{{currentUser.youtubeChannelId}}" placeholder="Enter your YouTube Channel ID" class="w-full p-2 border rounded">
+        <input type="text" id="youtubeChannelId" name="youtubeChannelId" value="{{currentUser.youtubeChannelId}}" placeholder="Enter your YouTube Channel ID (e.g., UCxxxxxxxxxxxxxxxxxxxxxx)" class="w-full p-2 border rounded">
         <p class="text-sm text-gray-500 mt-1">Find your Channel ID in YouTube Studio > Settings > Channel > Advanced settings.</p>
+      </div>
+      <div class="mb-4">
+        <label for="youtubeVideoId" class="block text-sm font-medium text-gray-700">YouTube Video ID</label>
+        <input type="text" id="youtubeVideoId" name="youtubeVideoId" value="{{currentUser.youtubeVideoId}}" placeholder="Enter your YouTube Video ID (e.g., dQw4w9WgXcQ)" class="w-full p-2 border rounded">
+        <p class="text-sm text-gray-500 mt-1">Find your Video ID in the YouTube video URL (e.g., https://www.youtube.com/watch?v=dQw4w9WgXcQ).</p>
       </div>
       <div class="mb-4">
         <label for="profilePicture" class="block text-sm font-medium text-gray-700">Profile Picture</label>
@@ -39,32 +43,50 @@
       <button type="submit" class="px-4 py-2 bg-black text-white rounded hover:opacity-80">Update Profile</button>
     </form>
 
-    <!-- Thống kê kênh YouTube -->
-    {{#if youtubeStats}}
+    <!-- Thống kê YouTube -->
+    {{#if stats}}
       <div class="border-t pt-6">
-        <h3 class="text-xl font-semibold mb-4">YouTube Channel Statistics</h3>
-        {{#if youtubeStats.error}}
-          <p class="text-red-600">{{youtubeStats.error}}</p>
+        <h3 class="text-xl font-semibold mb-4">YouTube Statistics</h3>
+        {{#if stats.error}}
+          <p class="text-red-600">{{stats.error}}</p>
         {{else}}
-          <div class="flex items-center mb-4">
-            <img src="{{youtubeStats.thumbnail}}" alt="Channel Thumbnail" class="w-12 h-12 rounded-full mr-4">
-            <div>
-              <h4 class="text-lg font-medium">{{youtubeStats.channelTitle}}</h4>
-              <a href="https://www.youtube.com/channel/{{currentUser.youtubeChannelId}}" target="_blank" class="text-blue-500 text-sm">Visit Channel</a>
+          <div class="mb-6">
+            <h4 class="text-lg font-medium mb-2">Channel: {{stats.channelTitle}}</h4>
+            <a href="https://www.youtube.com/channel/{{currentUser.youtubeChannelId}}" target="_blank" class="text-blue-500 text-sm">Visit Channel</a>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+              <div class="p-4 bg-gray-100 rounded-lg text-center">
+                <p class="text-sm text-gray-600">Subscribers</p>
+                <p class="text-xl font-semibold">{{stats.subscriberCount}}</p>
+              </div>
+              <div class="p-4 bg-gray-100 rounded-lg text-center">
+                <p class="text-sm text-gray-600">Videos</p>
+                <p class="text-xl font-semibold">{{stats.channelVideoCount}}</p>
+              </div>
+              <div class="p-4 bg-gray-100 rounded-lg text-center">
+                <p class="text-sm text-gray-600">Views</p>
+                <p class="text-xl font-semibold">{{stats.channelViewCount}}</p>
+              </div>
             </div>
           </div>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-            <div class="p-4 bg-gray-100 rounded-lg text-center">
-              <p class="text-sm text-gray-600">Subscribers</p>
-              <p class="text-xl font-semibold">{{youtubeStats.subscriberCount}}</p>
+          <div class="mb-6">
+            <h4 class="text-lg font-medium mb-2">Video: {{stats.videoTitle}}</h4>
+            <div class="flex items-center mb-4">
+              <img src="{{stats.thumbnail}}" alt="Video Thumbnail" class="w-12 h-12 rounded mr-4">
+              <a href="https://www.youtube.com/watch?v={{currentUser.youtubeVideoId}}" target="_blank" class="text-blue-500 text-sm">Watch Video</a>
             </div>
-            <div class="p-4 bg-gray-100 rounded-lg text-center">
-              <p class="text-sm text-gray-600">Total Videos</p>
-              <p class="text-xl font-semibold">{{youtubeStats.videoCount}}</p>
-            </div>
-            <div class="p-4 bg-gray-100 rounded-lg text-center">
-              <p class="text-sm text-gray-600">Total Views</p>
-              <p class="text-xl font-semibold">{{youtubeStats.viewCount}}</p>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div class="p-4 bg-gray-100 rounded-lg text-center">
+                <p class="text-sm text-gray-600">Views</p>
+                <p class="text-xl font-semibold">{{stats.viewCount}}</p>
+              </div>
+              <div class="p-4 bg-gray-100 rounded-lg text-center">
+                <p class="text-sm text-gray-600">Likes</p>
+                <p class="text-xl font-semibold">{{stats.likeCount}}</p>
+              </div>
+              <div class="p-4 bg-gray-100 rounded-lg text-center">
+                <p class="text-sm text-gray-600">Comments</p>
+                <p class="text-xl font-semibold">{{stats.commentCount}}</p>
+              </div>
             </div>
           </div>
 
@@ -72,7 +94,7 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Biểu đồ cột -->
             <div>
-              <h4 class="text-lg font-medium mb-2">Channel Metrics (Bar Chart)</h4>
+              <h4 class="text-lg font-medium mb-2">Metrics (Bar Chart)</h4>
               <canvas id="barChart" width="400" height="200"></canvas>
             </div>
             <!-- Biểu đồ tròn -->
@@ -83,7 +105,7 @@
             <!-- Biểu đồ đường (nếu có dữ liệu lịch sử) -->
             {{#if historicalStats.length}}
               <div class="col-span-1 md:col-span-2">
-                <h4 class="text-lg font-medium mb-2">Subscriber Trend (Line Chart)</h4>
+                <h4 class="text-lg font-medium mb-2">Trend (Line Chart)</h4>
                 <canvas id="lineChart" width="800" height="200"></canvas>
               </div>
             {{/if}}
@@ -92,7 +114,7 @@
       </div>
     {{else}}
       <div class="border-t pt-6">
-        <p class="text-gray-600">No YouTube channel linked. Please add your YouTube Channel ID above.</p>
+        <p class="text-gray-600">No YouTube channel or video linked. Please add a Channel ID and Video ID above.</p>
       </div>
     {{/if}}
   </div>
@@ -101,23 +123,26 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      {{#if youtubeStats}}
-        {{#unless youtubeStats.error}}
+      {{#if stats}}
+        {{#unless stats.error}}
           // Biểu đồ cột
           const barCtx = document.getElementById('barChart').getContext('2d');
           new Chart(barCtx, {
             type: 'bar',
             data: {
-              labels: ['Subscribers', 'Videos', 'Views'],
+              labels: ['Subscribers', 'Channel Videos', 'Channel Views', 'Video Views', 'Likes', 'Comments'],
               datasets: [{
-                label: 'Channel Metrics',
+                label: 'Metrics',
                 data: [
-                  {{youtubeStats.subscriberCount}},
-                  {{youtubeStats.videoCount}},
-                  {{youtubeStats.viewCount}}
+                  {{stats.subscriberCount}},
+                  {{stats.channelVideoCount}},
+                  {{stats.channelViewCount}},
+                  {{stats.viewCount}},
+                  {{stats.likeCount}},
+                  {{stats.commentCount}}
                 ],
-                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56'],
-                borderColor: ['#FF6384', '#36A2EB', '#FFCE56'],
+                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'],
+                borderColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'],
                 borderWidth: 1
               }]
             },
@@ -144,14 +169,17 @@
           new Chart(pieCtx, {
             type: 'pie',
             data: {
-              labels: ['Subscribers', 'Videos', 'Views'],
+              labels: ['Subscribers', 'Channel Videos', 'Channel Views', 'Video Views', 'Likes', 'Comments'],
               datasets: [{
                 data: [
-                  {{youtubeStats.subscriberCount}},
-                  {{youtubeStats.videoCount}},
-                  {{youtubeStats.viewCount}}
+                  {{stats.subscriberCount}},
+                  {{stats.channelVideoCount}},
+                  {{stats.channelViewCount}},
+                  {{stats.viewCount}},
+                  {{stats.likeCount}},
+                  {{stats.commentCount}}
                 ],
-                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56'],
+                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'],
                 borderColor: ['#FFFFFF'],
                 borderWidth: 1
               }]
@@ -172,22 +200,44 @@
               type: 'line',
               data: {
                 labels: [{{#each historicalStats}}'{{date}}',{{/each}}],
-                datasets: [{
-                  label: 'Subscribers',
-                  data: [{{#each historicalStats}}{{subscriberCount}},{{/each}}],
-                  borderColor: '#FF6384',
-                  fill: false
-                }, {
-                  label: 'Videos',
-                  data: [{{#each historicalStats}}{{videoCount}},{{/each}}],
-                  borderColor: '#36A2EB',
-                  fill: false
-                }, {
-                  label: 'Views',
-                  data: [{{#each historicalStats}}{{viewCount}},{{/each}}],
-                  borderColor: '#FFCE56',
-                  fill: false
-                }]
+                datasets: [
+                  {
+                    label: 'Subscribers',
+                    data: [{{#each historicalStats}}{{subscriberCount}},{{/each}}],
+                    borderColor: '#FF6384',
+                    fill: false
+                  },
+                  {
+                    label: 'Channel Videos',
+                    data: [{{#each historicalStats}}{{channelVideoCount}},{{/each}}],
+                    borderColor: '#36A2EB',
+                    fill: false
+                  },
+                  {
+                    label: 'Channel Views',
+                    data: [{{#each historicalStats}}{{channelViewCount}},{{/each}}],
+                    borderColor: '#FFCE56',
+                    fill: false
+                  },
+                  {
+                    label: 'Video Views',
+                    data: [{{#each historicalStats}}{{viewCount}},{{/each}}],
+                    borderColor: '#4BC0C0',
+                    fill: false
+                  },
+                  {
+                    label: 'Likes',
+                    data: [{{#each historicalStats}}{{likeCount}},{{/each}}],
+                    borderColor: '#9966FF',
+                    fill: false
+                  },
+                  {
+                    label: 'Comments',
+                    data: [{{#each historicalStats}}{{commentCount}},{{/each}}],
+                    borderColor: '#FF9F40',
+                    fill: false
+                  }
+                ]
               },
               options: {
                 scales: {

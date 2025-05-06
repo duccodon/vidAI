@@ -132,7 +132,7 @@
       </div>
 
       <div class="flex items-center">
-        <div id="next3Button" class="plus-button inline-block px-[2rem] py-[.6rem] font-medium cursor-pointer transition ease-in-out duration-300 text-sm hover:opacity-80 bg-white text-black border border-black border-solid rounded-[.7rem] mt-4">
+        <div id="audioButton" class="plus-button inline-block px-[2rem] py-[.6rem] font-medium cursor-pointer transition ease-in-out duration-300 text-sm hover:opacity-80 bg-white text-black border border-black border-solid rounded-[.7rem] mt-4">
           Next
         </div>
       </div>
@@ -256,6 +256,7 @@
       }
 
       const scriptDisplay = document.getElementById("scriptDisplay");
+      scriptDisplay.setAttribute("readonly", "true"); 
       try {
         scriptDisplay.textContent = "In process...";
 
@@ -296,6 +297,28 @@
       }
 
       document.getElementById("thirdPage").style.display = "block";
+
+      try {
+        const res = await fetch("/homepage/api/generate-audio", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            script: script,
+          }),
+        });
+
+        const data = await res.json();
+        
+        if (data.success) {
+          console.log("Audio generated successfully:", data.audioUrl);
+        } else {
+          console.error("Error generating audio:", data.message);
+        }
+      }catch (err) {
+        console.error(err);
+      }
       // Redirect to the next page or perform any action you want
       //window.location.href = "/homepage/gen-audio";
     });
