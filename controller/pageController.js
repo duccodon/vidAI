@@ -16,6 +16,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const { generateScript, crawlWikipedia, crawlPubMed, crawlNature } = require('../utils/dataScript'); 
+const { generateAudioScript } = require('../utils/audio');
 
 
 controller.showLogin = (req, res) => {
@@ -58,6 +59,7 @@ controller.login = async (req, res) => {
     }
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
+      console.log(await bcrypt.hash(password, 10));
       return res.render("login", {
         layout: "account",
         title: "Login",
@@ -291,6 +293,12 @@ controller.genScript = async (req, res) => {
     console.error(err);
     return res.status(500).json({ success: false, message: "Error generating script" });
   }
+}
+
+controller.genAudio = async (req, res) => {
+  const {script} = req.body;
+
+  generateAudioScript(script);
 }
 
 module.exports = controller
