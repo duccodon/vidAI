@@ -176,7 +176,7 @@ controller.showProfile = async (req, res) => {
       }
 
       // Lấy thống kê kênh
-      const channelUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${user.youtubeChannelId}&key=${apiKey}`;
+      const channelUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,contentDetails,statistics&id=${user.youtubeChannelId}&key=${apiKey}`;
       const channelResponse = await axios.get(channelUrl);
       const channelData = channelResponse.data.items?.[0];
 
@@ -211,10 +211,16 @@ controller.showProfile = async (req, res) => {
             channelViewCount: stats.channelViewCount,
           });
 
+          // Lấy dữ liệu lịch sử trong 30 ngày qua
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
           historicalStats = await models.VideoStats.findAll({
-            where: { userId, videoId: user.youtubeVideoId },
+            where: { 
+              userId, 
+              videoId: user.youtubeVideoId,
+              recordedAt: { [Op.gte]: thirtyDaysAgo }
+            },
             order: [['recordedAt', 'ASC']],
-            limit: 7,
           });
         }
       }
