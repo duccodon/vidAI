@@ -1,12 +1,11 @@
-// models/User.js
 "use strict";
 const { Model } = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
   class User extends Model {
     static associate(models) {
-      // define association here
-      User.hasMany(models.Video, { foreignKey: "user_id" });
+      User.hasMany(models.Video, { foreignKey: "userId" });
+      User.hasMany(models.VideoStats, { foreignKey: "userId" });
     }
   }
 
@@ -14,37 +13,45 @@ module.exports = (sequelize, DataTypes) => {
     {
       username: {
         type: DataTypes.STRING,
-        unique: true,  // Đảm bảo username là duy nhất
-        allowNull: false  // Đảm bảo username không được để trống
+        unique: true,
+        allowNull: false,
       },
       email: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: false,
       },
       phonenumber: DataTypes.STRING,
       password: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: false,
       },
       bio: DataTypes.TEXT,
       profile_picture: DataTypes.TEXT,
-      verificationToken: {   
+      verificationToken: {
         type: DataTypes.STRING,
-        allowNull: true,      
+        allowNull: true,
       },
       resetToken: {
         type: DataTypes.STRING,
         allowNull: true,
       },
-      isVerified: {           
+      isVerified: {
         type: DataTypes.BOOLEAN,
-        defaultValue: false,  
+        defaultValue: false,
       },
       youtubeChannelId: {
         type: DataTypes.STRING,
         allowNull: true,
       },
       youtubeVideoId: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      youtubeAccessToken: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      youtubeRefreshToken: {
         type: DataTypes.STRING,
         allowNull: true,
       },
