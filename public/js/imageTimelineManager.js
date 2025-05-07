@@ -1,5 +1,5 @@
 export class ImageTimelineManager {
-    constructor(timelineElement, getTimelineWidth, getAudioDuration) {
+    constructor(timelineElement, getTimelineWidth, getAudioDuration, pps) {
       this.timelineElement = timelineElement;
       this.images = [];
       this.selectedWrapper = null;
@@ -11,7 +11,24 @@ export class ImageTimelineManager {
       return this.getTimelineWidth() / this.getAudioDuration();
     }
   
-    addImage(src, start = this.getNextAvailableStart(), duration = 5) {
+    addImage(src, start, duration = 5) {
+      if (start === undefined) {
+        start = this.getNextAvailableStart();
+      }
+      if (duration === undefined) {
+        const remaining = this.getAudioDuration() - start;
+        if (remaining <= 1) {
+          alert('⛔ Không còn đủ thời gian để thêm ảnh.');
+          return;
+        }
+        duration = Math.min(5, remaining);
+      }
+      
+      const totalEnd = start + duration;
+      if (totalEnd > this.getAudioDuration()) {
+        alert('⛔ Ảnh này vượt quá thời lượng audio. Vui lòng thu ngắn lại hoặc xóa bớt ảnh trước đó.');
+        return;
+      }
       const wrapper = document.createElement('div');
       wrapper.className = 'absolute top-0 h-full border rounded shadow bg-white overflow-hidden';
       const pps = this.getPixelsPerSecond();
@@ -233,10 +250,12 @@ export class ImageTimelineManager {
         image.duration = parseFloat((width / pps).toFixed(2));
       }
     }
-  
     getNextAvailableStart() {
       if (this.images.length === 0) return 0;
-      const last = this.images[this.images.length - 1];
+    
+      const last = this.images.reduce((a, b) =>
+        (a.start + a.duration > b.start + b.duration) ? a : b
+      );
       return last.start + last.duration;
     }
   }

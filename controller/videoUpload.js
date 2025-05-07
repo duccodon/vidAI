@@ -67,7 +67,7 @@ const uploadVideo = async (videoPath, metadata = {}, userId = null) => {
 
 
 controller.exportVideo = async (req, res) => {
-  const { timeline, audioUrl, audioDuration, resolution = '720p', title, description, topic} = req.body;
+  const { timeline, audioUrl, audioDuration, volume = 1.0, resolution = '720p', title, description, topic} = req.body;
       if (!Array.isArray(timeline) || !audioUrl || !audioDuration) {
           return res.status(400).json({ error: 'Missing timeline, audioUrl or audioDuration' });
       }
@@ -146,7 +146,7 @@ controller.exportVideo = async (req, res) => {
       const outputPath = path.join(publicDir, 'exported', `video_${Date.now()}.mp4`);
       const audioPath = path.join(publicDir, normalizePath(audioUrl));
   
-      const cmd = `"${ffmpegPath}" -f concat -safe 0 -i "${videoListPath}" -i "${audioPath}" -c:v copy -c:a aac -shortest -y "${outputPath}"`;
+      const cmd = `"${ffmpegPath}" -f concat -safe 0 -i "${videoListPath}" -i "${audioPath}" -filter:a "volume=${volume}" -c:v copy -c:a aac -shortest -y "${outputPath}"`;
       console.log('Running export command:', cmd);
       exec(cmd, async (err, stdout, stderr) => {
           if (err) {
@@ -174,7 +174,7 @@ controller.exportVideo = async (req, res) => {
 };
 
 controller.renderVideo = async (req, res) => {
-  const { timeline, audioUrl, audioDuration } = req.body;
+  const { timeline, audioUrl, audioDuration, volume = 1.0 } = req.body;
       if (!Array.isArray(timeline) || !audioUrl || !audioDuration) {
         return res.status(400).json({ error: 'Missing timeline, audioUrl or audioDuration' });
       }
@@ -247,7 +247,7 @@ controller.renderVideo = async (req, res) => {
       const audioPath = path.join(publicDir, normalizePath(audioUrl));
     
       // Step 5: Run concat and add audio
-      const cmd = `"${ffmpegPath}" -f concat -safe 0 -i "${videoListPath}" -i "${audioPath}" -c:v copy -c:a aac -shortest -y "${outputPath}"`;
+      const cmd = `"${ffmpegPath}" -f concat -safe 0 -i "${videoListPath}" -i "${audioPath}" -filter:a "volume=${volume}" -c:v copy -c:a aac -shortest -y "${outputPath}"`;
       console.log('Running command:', cmd);
       exec(cmd, (err, stdout, stderr) => {
         if (err) {

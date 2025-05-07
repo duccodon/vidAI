@@ -68,14 +68,15 @@
         </div>
       </div>
     </div>
-    <!-- Step Slider -->
-    <div class="mb-6 flex flex-col">
-      <label for="stepSelect" class="text-sm font-medium text-gray-700 mb-1">
-        Timeline Step (seconds): 
-        <span id="stepValue" class="font-semibold text-blue-600 ml-1">5</span>
+    <!-- Audio Slider -->
+    <div class="mb-6">
+      <label for="volumeRange" class="text-sm font-medium text-gray-700 mb-1">
+        Volume: <span id="volumeValue" class="font-semibold text-blue-600 ml-1">100%</span>
       </label>
-      <input id="stepSelect" type="range" min="1" max="30" step="1" value="5" class="w-full">
+      <input type="range" id="volumeRange" min="0" max="200" value="100" step="1" class="w-full">
     </div>
+
+
     <div class="mb-6">
       <div class="mb-6 flex justify-between items-center gap-4">
         <!-- Nhóm bên trái -->
@@ -100,13 +101,17 @@
         <div class="timeline-scale mb-1 relative" id="imageScale">
           <div id="imagePlayhead" class="playhead"></div>
         </div>
-        <div id="imageTimeline" class="flex h-24 p-4 border border-gray-300 bg-white rounded-xl shadow-inner" style="min-width: 100%"></div>
+        <div id="imageTimeline" class="relative flex h-24 p-4 border border-gray-300 bg-white rounded-xl shadow-inner">
+        <div id="imageTimelineTickLayer" class="absolute top-0 bottom-0 left-0 right-0 z-0"></div>
+        </div>
+
       </div>
     </div>
 
     <!-- Audio Timeline (shared scroll) -->
     <div class="mb-10 scroll-sync" id="audioTimelineScroll">
       <div style="width: max-content">
+        <div id="audioTimeLabel" class="absolute text-xs text-gray-700 bg-white px-1 rounded shadow" style="transform: translateX(-50%); top: -1.25rem;"></div>
         <div class="timeline-scale mb-1 relative" id="audioScale">
           <div id="audioPlayhead" class="playhead"></div>
         </div>
@@ -146,13 +151,13 @@
         const imageForm = document.getElementById('imageForm');
         const imageTimeline = document.getElementById('imageTimeline');
         const playPauseBtn = document.getElementById('playPauseBtn');
-
-
-        const metadata = {{{json metadata}}};
+      
         const imageFilenames = [
         "image1.jpg", "image2.jpg", "image3.jpg", "image4.jpg", "image5.jpg",
         "image1.jpg", "image2.jpg", "image3.jpg", "image4.jpg", "image5.jpg"
         ];
+
+        window.metadata = {{{json metadata}}};
 
         imageFilenames.forEach((filename) => {
           const img = document.createElement('img');
@@ -166,13 +171,13 @@
         const imageScale = document.getElementById('imageScale');
         const audioScale = document.getElementById('audioScale');
         const waveform = document.getElementById('waveform');
-        const stepSelect = document.getElementById('stepSelect');
-        const stepValue = document.getElementById('stepValue');
         const audioPlayhead = document.getElementById('audioPlayhead');
         const imagePlayhead = document.getElementById('imagePlayhead');
         const currentTimeDisplay = document.getElementById('currentTimeDisplay');
         const restartButton = document.getElementById('RestartBtn');
-        
+        const volumeRange = document.getElementById('volumeRange');
+        const volumeValue = document.getElementById('volumeValue');
+        const timeLabel = document.getElementById('audioTimeLabel');
         const publishBtn = document.getElementById('publishBtn');
         const publishModal = document.getElementById('publishModal');
         const resolutionSelect = document.getElementById('resolutionSelect');
@@ -180,31 +185,52 @@
         const confirmPublish = document.getElementById('confirmPublish');
 
         function updateTimelineMarks(duration) {
-        const step = parseInt(stepSelect.value);
-        const pps = waveform.scrollWidth / duration; // px per second
-        const markWidth = step * pps;
+          const step = 5;
+          const pps = waveform.scrollWidth / duration;
+          const markWidth = step * pps;
 
-        [imageScale, audioScale].forEach(scale => {
+          [imageScale, audioScale].forEach(scale => {
             scale.innerHTML = '';
             const playhead = scale === imageScale ? imagePlayhead : audioPlayhead;
             scale.appendChild(playhead);
 
-            for (let t = 0; t <= duration; t += step) {
-            const mins = Math.floor(t / 60);
-            const secs = Math.floor(t % 60).toString().padStart(2, '0');
+            // Tạo tick cho mỗi step (0, 5, 10, ..., gần cuối)
+            let t = 0;
+            while (t < duration) {
+              const mins = Math.floor(t / 60);
+              const secs = Math.floor(t % 60).toString().padStart(2, '0');
 
-            const tick = document.createElement('div');
-            tick.style.display = 'inline-block';
-            tick.style.width = `${markWidth}px`;
-            tick.textContent = `${mins}:${secs}`;
-            scale.appendChild(tick);
+              const tick = document.createElement('div');
+              tick.style.display = 'inline-block';
+              tick.style.width = `${markWidth}px`;
+              tick.textContent = `${mins}:${secs}`;
+              scale.appendChild(tick);
+
+              t += step;
             }
 
-            scale.style.width = `${waveform.scrollWidth}px`; // giữ đồng bộ scroll
-            imageTimeline.style.width = `${waveform.scrollWidth}px`;
-        });
-        }
+            // Tick cuối: căn chính xác tới duration
+            const lastWidth = (duration - (t - step)) * pps;
+            if (lastWidth > 0) {
+              const mins = Math.floor(duration / 60);
+              const secs = Math.floor(duration % 60).toString().padStart(2, '0');
 
+              const lastTick = document.createElement('div');
+              lastTick.style.display = 'inline-block';
+              lastTick.style.width = `${lastWidth}px`;
+              lastTick.textContent = `${mins}:${secs}`;
+              scale.appendChild(lastTick);
+            }
+
+            scale.style.width = `${waveform.scrollWidth}px`;
+            imageTimeline.style.width = `${waveform.scrollWidth}px`;
+          });
+        }
+        volumeRange.addEventListener('input', () => {
+          const volume = parseInt(volumeRange.value) / 100;
+          volumeValue.textContent = `${volumeRange.value}%`;
+          wavesurfer.setVolume(volume);
+        });
 
         const wavesurfer = WaveSurfer.create({
         container: '#waveform',
@@ -249,6 +275,19 @@
         const mins = Math.floor(currentTime / 60);
         const secs = Math.floor(currentTime % 60).toString().padStart(2, '0');
         currentTimeDisplay.textContent = `🕒 ${mins}:${secs}`;
+
+        const playheadX = imagePlayhead.offsetLeft;
+        const container = document.getElementById('timelineScroll');
+
+        const buffer = 100; // pixel trước khi chạm rìa
+        if (playheadX > container.scrollLeft + container.offsetWidth - buffer) {
+          container.scrollLeft = playheadX - container.offsetWidth + buffer;
+        }
+
+        if (timeLabel) {
+          timeLabel.style.left = `${percent * audioScaleWidth}px`;
+          timeLabel.textContent = `${mins}:${secs}`;
+        }
         });
 
         wavesurfer.on('seek', (progress) => {
@@ -259,12 +298,6 @@
         currentTimeDisplay.textContent = `🕒 ${mins}:${secs}`;
         });
 
-        stepSelect.addEventListener('input', () => {
-        const duration = wavesurfer.getDuration();
-        stepValue.textContent = stepSelect.value; // ← Cập nhật giá trị
-        updateTimelineMarks(duration);
-        });
-
         document.getElementById('timelineScroll').addEventListener('scroll', (e) => {
         document.getElementById('audioTimelineScroll').scrollLeft = e.target.scrollLeft;
         });
@@ -273,6 +306,7 @@
         });
 
         wavesurfer.load('/img/assets/audio1.mp3');
+        wavesurfer.setVolume(1.0); // 100% volume
 
 
         const renderBtn = document.getElementById('renderBtn');
@@ -289,6 +323,7 @@
                 timeline: imageManager.getAllImages(),
                 audioUrl: '/img/assets/audio1.mp3',
                 audioDuration: wavesurfer.getDuration(),
+                volume: parseInt(volumeRange.value) / 100
               })
             });
             if (!resp.ok) throw new Error(`Server error ${resp.status}`);
@@ -302,7 +337,7 @@
             alert('Không render được video: ' + err.message);
           } finally {
             renderBtn.disabled = false;
-            renderBtn.textContent = 'Render MP4';
+            renderBtn.textContent = 'Preview';
           }
         });
 
@@ -328,6 +363,7 @@
                 timeline: imageManager.getAllImages(), // bạn cần đảm bảo gồm start, duration, src
                 audioUrl: '/img/assets/audio1.mp3',
                 audioDuration: wavesurfer.getDuration(),
+                volume: parseInt(volumeRange.value) / 100,
                 resolution: resolutionSelect.value,
                 title: metadata.title,
                 description: metadata.description,
@@ -356,7 +392,7 @@
 
     <script type="module">
         //SCRIPT JS CHO BEHAVIOUR TIMELINE ẢNH
-        const metadata = {{{json metadata}}}; // Dữ liệu metadata từ server
+         const metadata = window.metadata;
 
         import { ImageTimelineManager } from '/js/imageTimelineManager.js';
 
