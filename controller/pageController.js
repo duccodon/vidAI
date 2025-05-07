@@ -308,7 +308,7 @@ controller.genScript = async (req, res) => {
   console.log("Raw text from Wikipedia:", rawText); 
   console.log("\nRaw text from PubMed:", pubmedText);
   console.log("\nRaw text from Nature:", natureText);
-  const script = await generateScript(duration, topic, chatbot, writingStyles, rawText); 
+  const script = await generateScript(duration, topic, chatbot, writingStyles, combinedText); 
   try {
     return res.json({ success: true, script });
   } catch (err) {
@@ -318,9 +318,16 @@ controller.genScript = async (req, res) => {
 }
 
 controller.genAudio = async (req, res) => {
-  const {script} = req.body;
+  const { engine, voice, script } = req.body;
 
-  generateAudioScript(script);
-}
+  try {
+    const audioData = await generateAudioScript(engine, voice, script);
+    res.json({ success: true, audios: audioData });
+  } catch (err) {
+    console.error("Error generating audio:", err);
+    res.status(500).json({ success: false, message: "Failed to generate audio" });
+  }
+};
+
 
 module.exports = controller

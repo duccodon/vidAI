@@ -1,50 +1,62 @@
-const textToSpeech = require("@google-cloud/text-to-speech");
 const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
-
+const { PollyClient, SynthesizeSpeechCommand } = require("@aws-sdk/client-polly");
 const AWS = require("aws-sdk");
 const gTTS = require('gtts');
 
-async function generateAudioScript(script) {
+const audioOutputDir = path.join(__dirname, "../public/audios");
+
+async function generateAudioScript(engine, voiceId, script) {
   const segments = parseScriptWithIdeas(script);
-  //const client = new textToSpeech.TextToSpeechClient();
+  const audioResults = [];
 
-  console.log("Parsed segments:", segments);
-  // Create a directory to store audio files
-  // const dirPath = path.join(__dirname, '../public/audios');
-  // if (!fs.existsSync(dirPath)) {
-  //   fs.mkdirSync(dirPath);
-  // }
+  if (!fs.existsSync(audioOutputDir)) {
+    fs.mkdirSync(audioOutputDir, { recursive: true });
+  }
 
-  // for (const segment of segments) {
-  //   for (const idea of segment.ideas) {
-  //     const text = idea.text;
+  for (const segment of segments) {
+    const segmentAudios = {
+      segmentTitle: segment.title,
+      start: segment.start,
+      end: segment.end,
+      ideas: [],
+    };
 
-  //     if (text) {
-  //       const request = {
-  //         input: { text },
-  //         voice: { languageCode: "vi-VN", name: "vi-VN-Standard-C" },
-  //         audioConfig: { audioEncoding: "MP3" },
-  //       };
+    for (let i = 0; i < segment.ideas.length; i++) {
+      const idea = segment.ideas[i];
+      const text = idea.text;
+      if (!text) continue;
 
-  //       try {
-  //         const [response] = await client.synthesizeSpeech(request);
-  //         const filePath = path.join(dirPath, `audio_${segment.start}_${segment.end}.mp3`);
-  //         fs.writeFileSync(filePath, response.audioContent, "binary");
+      const filename = `audio_${segment.start.replace(":", "-")}_${segment.end.replace(":", "-")}_${i}.mp3`;
+      const outputFile = path.join(audioOutputDir, filename);
+      const audioPath = `/audios/${filename}`; // relative path to return
 
-  //         console.log(`Audio file for segment ${segment.title} saved to ${filePath}`);
-  //       } catch (error) {
-  //         console.error("Error during text-to-speech:", error);
-  //       }
-  //     }
-  //   }
-  // }
+      try {
+        if (engine === "elevenlabs") {
+          await generateElevenLabsAudio(text, voiceId, outputFile);
+        } else if (engine === "amazonpolly") {
+          await generateAmazonPollyAudio(text, voiceId, outputFile);
+        } else {
+          console.warn(`Engine '${engine}' not supported.`);
+        }
+
+        segmentAudios.ideas.push({ text, audioPath });
+      } catch (err) {
+        console.error(`Error generating audio for segment ${segment.title}, idea ${i}:`, err);
+      }
+    }
+
+    audioResults.push(segmentAudios);
+  }
+
+  return audioResults;
 }
+
 
 function parseScriptWithIdeas(script) {
   const blockRegex =
-    /\*\*\s*\[(.+?):\s*(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})\]\s*\*\*:\s*([\s\S]*?)(?=\n\*\*|\*\*|$)/g;
+    /\*\*\s*\[(.+?)\:\s*(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})\]\s*\*\*\s*([\s\S]*?)(?=\n\*\*|\*\*|$)/g;
 
   const segments = [];
   let match;
@@ -66,17 +78,11 @@ function parseScriptWithIdeas(script) {
 }
 
 function extractIdeas(content) {
-  // Remove trailing content that isn't part of an Idea block (e.g., "(Nhạc nền...)")
-  const cleanedContent = content.split(/^\(/m)[0].trim();
-
-  // Split by "Idea" headers
-  const ideaBlocks = cleanedContent.split(/(?:^|\n)Idea\s*\d*:\s*/).slice(1);
+  const ideaBlocks = content.split(/(?:^|\n)Idea\s*\d*:\s*/).slice(1);
   const ideas = [];
 
   for (const block of ideaBlocks) {
-    // Match Text: (everything until Visual: or end)
-    const textMatch = block.match(/Text:\s*([\s\S]*?)(?:\nVisual:|$)/);
-    // Match Visual: (everything until newline or end)
+    const textMatch = block.match(/Text:\s*([\s\S]*?)\s*Visual:/);
     const visualMatch = block.match(/Visual:\s*([\s\S]*?)(?:\n|$)/);
 
     ideas.push({
@@ -88,22 +94,34 @@ function extractIdeas(content) {
   return ideas;
 }
 
-//young adult lady XfNU2rGpBa01ckF309OY
+//confident male dXtC3XhB9GtPusIpNtQx
+//friendly young adult female XfNU2rGpBa01ckF309OY
 //trung nien vietnam nam 3VnrjnYrskPMDsapTr8X
+//gai da nang young middle age foH7s9fX31wFFH2yqrFa
 
 async function generateElevenLabsAudio(
   text,
-  voiceId = "XfNU2rGpBa01ckF309OY",
-  outputFile = "output.mp3"
+  voiceId,
+  outputFile
 ) {
   const apiKey = process.env.ELEVENLABS_API_KEY; 
+  const voiceModelMap = {
+    dXtC3XhB9GtPusIpNtQx: "eleven_multilingual_v2", // Hale
+    XfNU2rGpBa01ckF309OY: "eleven_multilingual_v2", // Nichalia
+
+    "3VnrjnYrskPMDsapTr8X": "eleven_flash_v2_5", // DangTungDuy 
+    foH7s9fX31wFFH2yqrFa: "eleven_flash_v2_5",     // Huyen
+  };
+
+  const modelId = voiceModelMap[voiceId] || "eleven_flash_v2_5";
+  console.log("Using model ID:", voiceId + " " + modelId);
 
   try {
     const response = await axios.post(
       `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
       {
         text: text,
-        model_id: "eleven_multilingual_v2", // eleven_flash_v2_5 cho tieng viet
+        model_id: modelId, // eleven_flash_v2_5 cho tieng viet, eleven_multilingual_v2 cho tieng anh
         voice_settings: {
           stability: 0.4,
           similarity_boost: 0.75,
@@ -128,9 +146,8 @@ async function generateElevenLabsAudio(
   }
 }
 
-//generateElevenLabsAudio("hi there, im your AI assistant from ElevenLabs");
-
 //aws chi dung cho tieng anh
+// Cấu hình thông tin xác thực
 AWS.config.update({
   region: "ap-southeast-1", // Singapore hoặc us-east-1
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
@@ -139,24 +156,31 @@ AWS.config.update({
 
 const polly = new AWS.Polly();
 
-async function generateAmazonPollyAudio(text, voiceId) {
+async function generateAmazonPollyAudio(text, voiceId, outputFile) {
+  const amazonVoiceModelMap = {
+    Joanna: "en-US", // en
+    Matthew: "en-US", // en
+    Jihye: "ko-KR", // korean
+    Daniel: "de-DE", // german
+  };
+
+  const langcode = amazonVoiceModelMap[voiceId] || "en-US";
+
   const params = {
     Text: text,
     OutputFormat: "mp3",
     VoiceId: voiceId, 
-    LanguageCode: "en-US", 
+    LanguageCode: langcode,
   };
 
   try {
     const data = await polly.synthesizeSpeech(params).promise();
-    fs.writeFileSync("output_polly.mp3", data.AudioStream);
-    console.log("✅ Audio saved as output_polly.mp3");
+    fs.writeFileSync(outputFile, data.AudioStream);
+    console.log("Audio saved as", outputFile);
   } catch (err) {
-    console.error("❌ Polly error:", err.message);
+    console.error("Polly error:", err.message);
   }
 }
-
-// generateAmazonPollyAudio("Chào Đức đây là amazon polly, chương trình chạy miễn phí 12 tháng", "Joanna");
 
 
 //gtts dung tieng viet va tieng anh nhung khong co nhieu giong noi
