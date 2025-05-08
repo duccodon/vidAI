@@ -1,46 +1,180 @@
 <div class="scrollbar fixed top-[3.8rem] sm:top-[5.4rem] left-[100px] h-[calc(100vh-5*1vh-3.8rem)] sm:h-[calc(100vh-5*1vh-7rem)] md:h-[calc(100vh-5*1vh-2rem)] w-[100%] md:w-[93%] bg-white rounded-[1rem] border border-[#ccc] overflow-y-auto overflow-x-hidden z-3 p-4 space-y-4">
-
   {{#if videos.length}}
     <ul class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {{#each videos}}
-        <li class="bg-gray-50 rounded-xl border border-gray-200 shadow hover:shadow-md p-4 transition duration-300">
+        <li class="bg-gray-50 rounded-xl border border-gray-200 shadow hover:shadow-md p-4 transition duration-300" data-video-id="{{this.id}}">
           <div class="mb-2">
             <h3 class="text-lg font-semibold text-gray-800">{{this.title}}</h3>
             <p class="text-sm text-gray-500 mb-1">Chủ đề: {{this.topic}}</p>
             <p class="text-sm text-gray-500">Thời lượng: {{this.duration}} giây</p>
             <p class="text-sm text-gray-500">Người đăng: {{this.createdAt}}</p>
           </div>
-
           {{#if this.description}}
             <p class="text-sm text-gray-600 mb-2">📄 {{this.description}}</p>
           {{/if}}
-
           <div class="rounded overflow-hidden">
             <video class="w-full rounded-md border" controls>
               <source src="{{this.filename}}" type="video/mp4">
               Trình duyệt không hỗ trợ video.
             </video>
           </div>
+          {{#if this.youtubeVideoId}}
+            <p class="text-green-600 mt-2">Uploaded to YouTube: <a href="https://www.youtube.com/watch?v={{this.youtubeVideoId}}" target="_blank" class="text-blue-500">Watch</a></p>
+          {{else}}
+            <button class="upload-youtube-btn mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700" data-video-id="{{this.id}}">Upload to YouTube</button>
+          {{/if}}
         </li>
       {{/each}}
     </ul>
   {{else}}
-    <p class="text-gray-500 text-center mt-8 text-lg">Không có video nào.</p>
+    <p class="text-gray-500 text-center mt-8 text-lg">Không có video nào. <a href="/homepage" class="text-blue-500">Tạo video ngay!</a></p>
   {{/if}}
 
- <!-- THAY ĐỔI DATA TRUYỀN VÀO Ở ĐÂY -->
-<form action="/Video/video-sync" method="POST">
-  <input type="hidden" name="audioUrl" value="/img/assets/audio1.mp3">
-  <input type="hidden" name="title" value="Tiêu đề video">
-  <input type="hidden" name="description" value="Mô tả chi tiết">
-  <input type="hidden" name="topic" value="Giới thiệu">
-  <input type="hidden" name="jsonPath" value="/data/generated_timeline_v2.json">
+  <!-- Modal tải lên YouTube -->
+  <div id="youtubeUploadModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
+      <h2 class="text-lg font-semibold mb-2">Upload to YouTube</h2>
+      <form id="youtubeUploadForm">
+        <input type="hidden" name="videoId" id="videoId">
+        <div class="mb-4">
+          <label class="block text-sm font-medium">Title</label>
+          <input type="text" name="title" id="uploadTitle" class="w-full p-2 border rounded" required>
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm font-medium">Description</label>
+          <textarea name="description" id="uploadDescription" class="w-full p-2 border rounded" rows="4"></textarea>
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm font-medium">Privacy Status</label>
+          <select name="privacyStatus" class="w-full p-2 border rounded">
+            <option value="public">Public</option>
+            <option value="private">Private</option>
+            <option value="unlisted">Unlisted</option>
+          </select>
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm font-medium">Thumbnail (Optional)</label>
+          <input type="file" name="thumbnail" id="thumbnailInput" accept="image/*" class="w-full p-2 border rounded">
+        </div>
+        <div class="flex justify-end gap-2">
+          <button type="button" id="cancelUpload" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded">Cancel</button>
+          <button type="submit" id="confirmUpload" class="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded">Upload</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
-  <button type="submit" class="fixed bottom-4 right-4 bg-blue-500 text-white rounded-full p-3 shadow-lg hover:bg-blue-600 transition duration-300">
-    <!-- biểu tượng -->
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-    </svg>
-  </button>
-</form>
+  <!-- Form hiện tại để đồng bộ video -->
+  <form action="/Video/video-sync" method="POST">
+    <input type="hidden" name="audioUrl" value="{{audioUrl}}">
+    <input type="hidden" name="title" value="{{title}}">
+    <input type="hidden" name="description" value="{{description}}">
+    <input type="hidden" name="topic" value="{{topic}}">
+    <input type="hidden" name="images" value="{{images}}">
+    <button type="submit" class="fixed bottom-4 right-4 bg-blue-500 text-white rounded-full p-3 shadow-lg hover:bg-blue-600 transition duration-300">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+      </svg>
+    </button>
+  </form>
 </div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const modal = document.getElementById("youtubeUploadModal");
+    const cancelBtn = document.getElementById("cancelUpload");
+    const form = document.getElementById("youtubeUploadForm");
+    const videoIdInput = document.getElementById("videoId");
+    const titleInput = document.getElementById("uploadTitle");
+    const descriptionInput = document.getElementById("uploadDescription");
+    const thumbnailInput = document.getElementById("thumbnailInput");
+
+    // Xử lý nút Upload to YouTube
+    document.querySelectorAll(".upload-youtube-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const videoId = btn.dataset.videoId;
+        const video = {{{json videos}}}.find(v => v.id == videoId);
+        if (video) {
+          videoIdInput.value = videoId;
+          titleInput.value = video.title;
+          descriptionInput.value = video.description || "";
+          thumbnailInput.value = ""; // Reset file input
+          modal.classList.remove("hidden");
+        }
+      });
+    });
+
+    // Đóng modal
+    cancelBtn.addEventListener("click", () => {
+      modal.classList.add("hidden");
+    });
+
+    // Xử lý form tải lên
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      const data = {
+        videoId: formData.get("videoId"),
+        title: formData.get("title"),
+        description: formData.get("description"),
+        privacyStatus: formData.get("privacyStatus"),
+      };
+
+      // Xử lý thumbnail nếu có
+      const thumbnailFile = formData.get("thumbnail");
+      if (thumbnailFile && thumbnailFile.size > 0) {
+        try {
+          const uploadResponse = await uploadThumbnail(thumbnailFile);
+          data.thumbnailUrl = uploadResponse.secure_url;
+        } catch (err) {
+          alert("Error uploading thumbnail: " + err.message);
+          return;
+        }
+      }
+
+      try {
+        const res = await fetch("/Video/api/upload-youtube", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+        const result = await res.json();
+
+        if (result.redirect) {
+          window.location.href = result.redirect; // Chuyển hướng để xác thực
+          return;
+        }
+
+        if (result.success) {
+          alert(`Video uploaded successfully! Watch it at: ${result.url}`);
+          modal.classList.add("hidden");
+          // Cập nhật giao diện để hiển thị trạng thái đã tải lên
+          const videoItem = document.querySelector(`li[data-video-id="${data.videoId}"]`);
+          if (videoItem) {
+            const btn = videoItem.querySelector(".upload-youtube-btn");
+            btn.outerHTML = `<p class="text-green-600 mt-2">Uploaded to YouTube: <a href="${result.url}" target="_blank" class="text-blue-500">Watch</a></p>`;
+          }
+        } else {
+          alert("Error uploading video: " + result.message);
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Error uploading video");
+      }
+    });
+
+    // Hàm tải thumbnail lên Cloudinary
+    async function uploadThumbnail(file) {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", "vidai_thumbnails"); // Tạo preset trong Cloudinary
+
+      const response = await fetch("https://api.cloudinary.com/v1_1/your_cloud_name/image/upload", {
+        method: "POST",
+        body: formData,
+      });
+      if (!response.ok) throw new Error("Failed to upload thumbnail");
+      return await response.json();
+    }
+  });
+</script>

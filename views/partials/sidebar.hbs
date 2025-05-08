@@ -54,31 +54,3 @@
     </div>
   </div>
 </div>
-
-<script src="/js/home.js"></script>
-<script>
-  document.querySelectorAll('.plus-button').forEach(button => {
-  button.addEventListener('click', function (event) {
-    event.preventDefault(); // Prevent the default behavior
-    var popup = document.getElementById('plus-popup');
-    var overlay = document.getElementById('overlay');
-    popup.classList.toggle('hidden');
-    overlay.classList.toggle('hidden');
-  });
-});
-
-  document.getElementById('overlay').addEventListener('click', function() {
-    var popup = document.getElementById('plus-popup');
-    var overlay = document.getElementById('overlay');
-    
-    // Hide the popup and overlay
-    popup.classList.add('hidden');
-    overlay.classList.add('hidden');
-  });
-
-  document.getElementById('close-create').addEventListener('click', function() {
-    var close = document.getElementById('plus-popup');
-    close.classList.add('hidden');
-    overlay.classList.add('hidden');
-  })
-</script>

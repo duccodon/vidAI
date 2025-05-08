@@ -1,13 +1,13 @@
 const router = require("express").Router();
-const {showVideo} = require('../controller/pageController');
-const {videoSync, exportVideo, renderVideo} = require('../controller/videoUpload');
+const { showVideo } = require("../controller/pageController");
+const { videoSync, exportVideo, renderVideo, authYouTube, handleYouTubeCallback, uploadToYouTube } = require("../controller/videoUpload");
 
+router.get("/", showVideo);
+router.post("/video-sync", videoSync);
+router.post("/api/render", renderVideo);
+router.post("/api/export", exportVideo);
+router.get("/auth/youtube", authYouTube);
+router.get("/rest/oauth2-credential/callback", handleYouTubeCallback);
+router.post("/api/upload-youtube", uploadToYouTube);
 
-router.get('/', showVideo);
-router.post('/video-sync', videoSync); //use this route to upload video to cloudinary and save to DB
-
-router.post('/api/render', renderVideo); 
-router.post('/api/export', exportVideo);
-  
 module.exports = router;
-

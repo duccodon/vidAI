@@ -115,7 +115,7 @@
 
 
   <!-- Section to gen audio -->
-  <div id="thirdPage" style="display: block;"
+  <div id="thirdPage" style="display: none;"
     class="fixed top-[3.8rem] sm:top-[5.4rem] left-[100px] h-[calc(100vh-5*1vh-3.8rem)] sm:h-[calc(100vh-5*1vh-7rem)] md:h-[calc(100vh-5*1vh-2rem)] w-[100%] md:w-[93%] bg-white rounded-[1rem] border border-[#ccc] overflow-y-auto overflow-x-hidden z-3">
     <div class="flex flex-row justify-between mx-4 my-auto gap-[3rem] py-[1rem]">
       <div class="flex items-center">
@@ -213,9 +213,45 @@
           </tr>
         </tbody>
       </table>
+
+      <div class="flex justify-center items-center mr-4">
+        <button id="finishAudioBtn"
+          class="plus-button inline-block px-[2rem] py-[.6rem] font-medium cursor-pointer transition ease-in-out duration-300 text-sm hover:opacity-80 bg-white text-black border border-black border-solid rounded-[.7rem]">
+          Finish audio
+        </button>
+      </div>
     </div>
 
   </div>
+
+
+  <!-- Section to gen media -->
+  <div id="fourthPage" style="display: none;"
+    class="fixed top-[3.8rem] sm:top-[5.4rem] left-[100px] h-[calc(100vh-5*1vh-3.8rem)] sm:h-[calc(100vh-5*1vh-7rem)] md:h-[calc(100vh-5*1vh-2rem)] w-[100%] md:w-[93%] bg-white rounded-[1rem] border border-[#ccc] overflow-y-auto overflow-x-hidden z-3">
+
+    <div class="flex flex-row justify-between mx-4 my-auto gap-[3rem] py-[1rem]">
+      <!-- Back button -->
+      <div class="flex items-center">
+        <div id="returnAudioBtn"
+          class="inline-block px-[2rem] py-[.6rem] font-medium cursor-pointer transition ease-in-out duration-300 text-sm hover:opacity-80 bg-white text-black border border-black border-solid rounded-[.7rem] mt-4">
+          Back
+        </div>
+      </div>
+
+      <!-- Next button -->
+      <div class="flex items-center">
+        <div id="mediaBtn"
+          class="inline-block px-[2rem] py-[.6rem] font-medium cursor-pointer transition ease-in-out duration-300 text-sm hover:opacity-80 bg-white text-black border border-black border-solid rounded-[.7rem] mt-4">
+          Next
+        </div>
+      </div>
+    </div>
+
+    <div class="text-center mt-10 text-lg font-semibold">
+      This is page to generate media
+    </div>
+  </div>
+
 
   <div class="mx-4 my-auto items-center gap-[1rem] py-[1rem] text-[25px]">Hot topics</div>
   <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-6 p-4">
@@ -284,6 +320,10 @@
 
   document.getElementById("returnScriptBtn").addEventListener("click", function () {
     document.getElementById("thirdPage").style.display = "none";
+  });
+
+  document.getElementById("returnAudioBtn").addEventListener("click", function () {
+    document.getElementById("fourthPage").style.display = "none"; 
   });
 
 
@@ -370,7 +410,7 @@
       window.currentDuration = duration;
     });
 
-    // Handle second "Next" button click
+    // Handle script "Next" button click
     document.getElementById("nextButton").addEventListener("click", async function () {
       const selectedChatbot = document.querySelector('input[name="chatbot"]:checked')?.value;
       let selectedWritingStyles = document.querySelector('input[name="writingStyle"]:checked')?.value;
@@ -495,6 +535,20 @@
         alert("Failed to generate audio. Please try again.");
       }
     });
+    
+    // Handle finish audio button click
+    document.getElementById("finishAudioBtn").addEventListener("click", async function () {
+      const finalJson = await generateFinalJson();
+      console.log("Final JSON:", finalJson);
+      const allHaveAudio = finalJson.every(item => item.audioUrl && item.audioUrl.trim() !== "");
+
+      if (!allHaveAudio) {
+        alert("Please generate audio files fully before proceeding.");
+        return;
+      }
+
+      document.getElementById("fourthPage").style.display = "block";
+    });  
   });
 
 
@@ -540,19 +594,184 @@
   }
 
   // Play audio btn
+  let currentAudio = null;
+  let currentButton = null;
+
   document.querySelectorAll(".play-btn").forEach(btn => {
     btn.addEventListener("click", () => {
-    const audio = new Audio(btn.dataset.audio);
-    audio.play();
+      // If another audio is already playing, pause that audio
+      if (currentAudio && currentAudio !== btn.audioInstance) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+        if (currentButton) {
+          currentButton.textContent = "Play";
+        }
+      }
+
+      // if there is no audio instance, create
+      if (!btn.audioInstance) {
+        btn.audioInstance = new Audio(btn.dataset.audio);
+      }
+
+      // If this audio is already playing, pause and reset
+      if (!btn.audioInstance.paused) {
+        btn.audioInstance.pause();
+        btn.audioInstance.currentTime = 0;
+        btn.textContent = "Play";
+        currentAudio = null;
+        currentButton = null;
+      } else { 
+        // play the audio
+        btn.audioInstance.play();
+        btn.textContent = "Stop";
+        currentAudio = btn.audioInstance;
+        currentButton = btn;
+
+        // Reset the button text when the audio ends
+        btn.audioInstance.onended = () => {
+          btn.textContent = "Play";
+          currentAudio = null;
+          currentButton = null;
+        };
+      }
     });
   });
 
+
   // Record btn
-  document.querySelectorAll(".record-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      alert("Record is not implemented!");
+  document.querySelectorAll(".record-btn").forEach((btn, index) => {
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
+    let timerInterval = null;
+    let seconds = 0;
+    let timerEl = null;
+
+    btn.addEventListener("click", async () => {
+      if (!isRecording) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          mediaRecorder = new MediaRecorder(stream);
+          audioChunks = [];
+
+          mediaRecorder.ondataavailable = e => {
+            if (e.data.size > 0) {
+              audioChunks.push(e.data);
+            }
+          };
+
+          mediaRecorder.onstop = async () => {
+            clearInterval(timerInterval);
+            timerEl.remove();
+
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const audio = new Audio(audioUrl);
+            audio.controls = true;
+
+            const audioContainer = document.createElement('div');
+            audioContainer.appendChild(audio);
+            btn.parentElement.appendChild(audioContainer);
+
+            // Gửi file về server
+            const formData = new FormData();
+            formData.append('audio', audioBlob, `recording_${index}.webm`);
+
+            const response = await fetch('/Homepage/upload-recording', {
+              method: 'POST',
+              body: formData
+            });
+            const result = await response.json();
+
+            if (result.success) {
+              console.log("Audio uploaded to server!");
+              btn.dataset.recordedUrl = result.path.replace('/src/', ''); // chỉ tên file 
+              btn.dataset.duration = seconds.toString(); // thời lượng
+            } else {
+              console.error("Upload failed.");
+            }
+          };
+
+          // Timer hiển thị
+          timerEl = document.createElement('span');
+          timerEl.className = "ml-2 text-xs text-white bg-red-500 px-2 py-1 rounded";
+          timerEl.textContent = "00:00";
+          btn.parentElement.appendChild(timerEl);
+
+          seconds = 0;
+          timerInterval = setInterval(() => {
+            seconds++;
+            const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+            const s = String(seconds % 60).padStart(2, '0');
+            timerEl.textContent = `${m}:${s}`;
+          }, 1000);
+
+          mediaRecorder.start();
+          isRecording = true;
+          btn.textContent = "Stop Recording";
+        } catch (err) {
+          console.error("Mic permission denied or error:", err);
+          alert("Failed to access microphone.");
+        }
+      } else {
+        mediaRecorder.stop();
+        isRecording = false;
+        btn.textContent = "Record";
+      }
     });
   });
+
+  // Save every data except image/vid to JSON
+  async function generateFinalJson() {
+    const rows = document.querySelectorAll("tbody tr");
+    const result = [];
+    let startTime = 0;
+
+    for (const row of rows) {
+      const text = row.querySelector("td:nth-child(2)").innerText.trim();
+      const playBtn = row.querySelector(".play-btn");
+      const recordBtn = row.querySelector(".record-btn");
+
+      const hasRecorded = recordBtn.dataset.recordedUrl;
+      const audioUrl = hasRecorded ? `/src/${recordBtn.dataset.recordedUrl}` : playBtn.dataset.audio;
+
+      let duration = hasRecorded ? parseFloat(recordBtn.dataset.duration) : null;
+
+      if (!hasRecorded) {
+        // Lấy duration từ audio gốc
+        duration = await getAudioDuration(audioUrl);
+      }
+
+      result.push({
+        start: startTime,
+        duration: duration,
+        audioUrl: audioUrl,
+        src: "",
+        content: text
+      });
+
+      startTime += duration;
+    }
+
+    console.log("Final JSON:", JSON.stringify(result, null, 2));
+    return result;
+  }
+
+  // Hàm phụ để lấy thời lượng file audio
+  function getAudioDuration(url) {
+    return new Promise((resolve) => {
+      const audio = new Audio(url);
+      audio.addEventListener('loadedmetadata', () => {
+        resolve(audio.duration);
+      });
+      audio.addEventListener('error', () => {
+        console.error("Error loading audio metadata:", url);
+        resolve(6); // fallback nếu lỗi
+      });
+    });
+  }
+
+
 
   function chooseTopic(topic) {
     console.log("Topic chosen:", topic);

@@ -1,19 +1,34 @@
-require('dotenv').config();
-const path = require('path');
-const fs = require('fs');
-const cloudinary = require('../config/cloudinaryConfig'); // cấu hình cloudinary riêng
-const util = require('util');
-const controller =  {};
-const models = require('../models'); // Import models from Sequelize
+require("dotenv").config();
+const path = require("path");
+const fs = require("fs").promises;
+const cloudinary = require("../config/cloudinaryConfig");
+const util = require("util");
+const controller = {};
+const models = require("../models");
 const readdir = util.promisify(fs.readdir);
 const stat = util.promisify(fs.stat);
-const { Video } = require("../models"); // Đường dẫn models tùy bạn
+const { Video } = require("../models");
+const ffmpeg = require("fluent-ffmpeg");
+const ffmpegPath = require("ffmpeg-static");
+const os = require("os");
+const { exec } = require("child_process");
+const { google } = require("googleapis");
+const OAuth2 = require("google-auth-library").OAuth2Client;
 
-const ffmpeg  = require('fluent-ffmpeg');
-const ffmpegPath = require('ffmpeg-static');
-const os = require('os');
-const { exec } = require('child_process');
-// tell fluent-ffmpeg where to find the binary
+// Cấu hình OAuth2 cho YouTube
+const oauth2Client = new OAuth2(
+  process.env.YOUTUBE_CLIENT_ID,
+  process.env.YOUTUBE_CLIENT_SECRET,
+  process.env.YOUTUBE_REDIRECT_URI
+);
+
+// Danh mục video YouTube
+const categoryIds = {
+  Entertainment: 24,
+  Education: 27,
+  ScienceTechnology: 28,
+};
+
 ffmpeg.setFfmpegPath(ffmpegPath);
 
 async function saveVideoToDB(videoData) {
@@ -25,9 +40,8 @@ async function saveVideoToDB(videoData) {
       duration: videoData.duration || 0,
       topic: videoData.topic,
       description: videoData.description,
-      userId: videoData.userId || null
+      userId: videoData.userId || null,
     });
-
     console.log("Video saved:", video.id);
     return video;
   } catch (err) {
@@ -36,35 +50,30 @@ async function saveVideoToDB(videoData) {
   }
 }
 
-
 const uploadVideo = async (videoPath, metadata = {}, userId = null) => {
-  // 1. Kiểm tra file tồn tại
   if (!fs.existsSync(videoPath)) {
-    throw new Error('Video file does not exist: ' + videoPath);
+    throw new Error("Video file does not exist: " + videoPath);
   }
 
-  // 2. Upload lên Cloudinary
   const result = await cloudinary.uploader.upload(videoPath, {
-    resource_type: 'video',
-    folder: 'vidai/videos'
+    resource_type: "video",
+    folder: "vidai/videos",
   });
 
-  console.log('✅ Video uploaded to Cloudinary:', result.secure_url);
+  console.log("✅ Video uploaded to Cloudinary:", result.secure_url);
 
-  // 3. Lưu vào DB
   await saveVideoToDB({
     cloudinaryId: result.public_id,
     filePath: result.secure_url,
     title: metadata.title || path.parse(videoPath).name,
     duration: result.duration ? Math.floor(result.duration) : 0,
-    topic: metadata.topic || 'Uncategorized',
-    description: metadata.description || '',
-    userId
+    topic: metadata.topic || "Uncategorized",
+    description: metadata.description || "",
+    userId,
   });
 
   return result;
 };
-
 
 controller.exportVideo = async (req, res) => {
   const { timeline, audioUrl, audioDuration, volume = 1.0, resolution = '720p', title, description, topic} = req.body;
@@ -314,8 +323,8 @@ controller.videoSync = async (req, res) => {
   res.render("video-sync", {
     headerName: "Đồng bộ video",
     page: 6,
-    layout: 'layout',
-    title: 'Đồng bộ video',
+    layout: "layout",
+    title: "Đồng bộ video",
     metadata: {
       audioUrl,
       title,
@@ -326,4 +335,124 @@ controller.videoSync = async (req, res) => {
   });  
 };
 
-module.exports = controller
+controller.authYouTube = async (req, res) => {
+  const url = oauth2Client.generateAuthUrl({
+    access_type: "offline",
+    scope: ["https://www.googleapis.com/auth/youtube.upload"],
+  });
+  res.redirect(url);
+};
+
+controller.handleYouTubeCallback = async (req, res) => {
+  const { code } = req.query;
+  try {
+    const { tokens } = await oauth2Client.getToken(code);
+    const userId = req.session.userId;
+    await models.User.update(
+      {
+        youtubeAccessToken: tokens.access_token,
+        youtubeRefreshToken: tokens.refresh_token,
+      },
+      { where: { id: userId } }
+    );
+    req.session.youtubeTokens = tokens;
+    res.redirect("/Video");
+  } catch (err) {
+    console.error("Error handling YouTube callback:", err.message);
+    res.status(500).send("Authentication failed");
+  }
+};
+
+controller.uploadToYouTube = async (req, res) => {
+  const { videoId, title, description, privacyStatus, thumbnailUrl } = req.body;
+  const userId = req.session.userId;
+
+  try {
+    const video = await models.Video.findByPk(videoId);
+    if (!video || video.userId !== userId) {
+      return res.status(404).json({ success: false, message: "Video not found or unauthorized" });
+    }
+
+    const user = await models.User.findByPk(userId);
+    if (!user.youtubeAccessToken) {
+      return res.json({ success: false, message: "YouTube authentication required", redirect: "/Video/auth/youtube" });
+    }
+
+    oauth2Client.setCredentials({
+      access_token: user.youtubeAccessToken,
+      refresh_token: user.youtubeRefreshToken,
+    });
+
+    const youtube = google.youtube({ version: "v3", auth: oauth2Client });
+
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "youtube-"));
+    const videoFile = path.join(tempDir, `video_${Date.now()}.mp4`);
+    await download(video.filePath, videoFile);
+
+    let thumbnailFile;
+    if (thumbnailUrl) {
+      thumbnailFile = path.join(tempDir, `thumb_${Date.now()}.png`);
+      await download(thumbnailUrl, thumbnailFile);
+    }
+
+    const response = await youtube.videos.insert({
+      part: "snippet,status",
+      requestBody: {
+        snippet: {
+          title: title || video.title,
+          description: description || video.description || "",
+          tags: ["vidai", video.topic || "video"],
+          categoryId: categoryIds.Education, // Có thể thay đổi theo topic
+          defaultLanguage: "en",
+          defaultAudioLanguage: "en",
+        },
+        status: {
+          privacyStatus: privacyStatus || "public",
+        },
+      },
+      media: {
+        body: fs.createReadStream(videoFile),
+      },
+    });
+
+    if (thumbnailFile) {
+      await youtube.thumbnails.set({
+        videoId: response.data.id,
+        media: {
+          body: fs.createReadStream(thumbnailFile),
+        },
+      });
+    }
+
+    await fs.rm(tempDir, { recursive: true, force: true });
+
+    // Lưu youtubeVideoId vào Video để theo dõi
+    await models.Video.update(
+      { youtubeVideoId: response.data.id },
+      { where: { id: videoId } }
+    );
+
+    return res.json({
+      success: true,
+      videoId: response.data.id,
+      url: `https://www.youtube.com/watch?v=${response.data.id}`,
+    });
+  } catch (err) {
+    console.error("Error uploading to YouTube:", err.message);
+    return res.status(500).json({ success: false, message: "Error uploading to YouTube" });
+  }
+};
+
+// Hàm download (tái sử dụng từ index.js)
+async function download(url, dest) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Download failed: " + url);
+  const fileStream = fs.createWriteStream(dest);
+  await new Promise((r, e) => {
+    res.body.pipe(fileStream);
+    res.body.on("error", e);
+    fileStream.on("finish", r);
+  });
+}
+
+module.exports = controller;
