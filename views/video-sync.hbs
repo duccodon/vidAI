@@ -246,7 +246,11 @@
           metadata.timeline.forEach(item => {
             const { src, start, duration } = item;
             const isVideo = src.endsWith('.mp4') || src.endsWith('.mov');
-            imageManager.addImage(src, start, duration, isVideo);
+            // Tạo đường dẫn đầy đủ cho src
+            const fullSrc = `/img/assets/${src}`;
+
+            // Gọi imageManager để thêm ảnh/video vào timeline
+            imageManager.addImage(fullSrc, start, duration, isVideo);
           });
         }
         });
@@ -295,7 +299,9 @@
         document.getElementById('timelineScroll').scrollLeft = e.target.scrollLeft;
         });
 
-        wavesurfer.load('/img/assets/audio1.mp3');
+
+
+        wavesurfer.load('/img/assets/audio1.mp3'); //LOAD AUDIO FILE 
         wavesurfer.setVolume(1.0); // 100% volume
 
 

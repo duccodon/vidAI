@@ -1,6 +1,7 @@
 require("dotenv").config();
 const path = require("path");
-const fs = require("fs").promises;
+const fs = require("fs");
+const fsPromises = require('fs').promises;  // Sử dụng fs.promises bất đồng bộ
 const cloudinary = require("../config/cloudinaryConfig");
 const util = require("util");
 const controller = {};
@@ -185,7 +186,7 @@ controller.exportVideo = async (req, res) => {
             const result = await uploadVideo(outputPath, { title, topic, description }, req.session.userId);
       
             // Xoá file sau khi upload thành công
-            fs.unlink(outputPath, (err) => {
+            fs.unlinkSync(outputPath, (err) => {
               if (err) console.warn('⚠️ Không thể xóa file sau upload:', err.message);
               else console.log('🧹 File đã được xóa sau khi upload:', outputPath);
             });
@@ -312,9 +313,17 @@ controller.renderVideo = async (req, res) => {
 controller.videoSync = async (req, res) => {
   const { audioUrl, title, description, topic, jsonPath } = req.body;
 
+  console.log('Audio URL:', audioUrl);
+  console.log('Title:', title);
+  console.log('Description:', description);
+  console.log('Topic:', topic);
+  console.log('JSON Path:', jsonPath);
+
+  
   let timelineData = [];
   try {
     const absolutePath = path.join(__dirname, '../public', jsonPath);
+    console.log('Đọc file JSON:', absolutePath);
     const raw = fs.readFileSync(absolutePath, 'utf-8');
     timelineData = JSON.parse(raw);
   } catch (e) {
@@ -411,7 +420,7 @@ controller.uploadToYouTube = async (req, res) => {
         },
       },
       media: {
-        body: fs.createReadStream(videoFile),
+        body: fsPromises.createReadStream(videoFile),
       },
     });
 
@@ -419,12 +428,12 @@ controller.uploadToYouTube = async (req, res) => {
       await youtube.thumbnails.set({
         videoId: response.data.id,
         media: {
-          body: fs.createReadStream(thumbnailFile),
+          body: fsPromises.createReadStream(thumbnailFile),
         },
       });
     }
 
-    await fs.rm(tempDir, { recursive: true, force: true });
+    await fsPromises.rm(tempDir, { recursive: true, force: true });
 
     // Lưu youtubeVideoId vào Video để theo dõi
     await models.Video.update(
@@ -447,7 +456,7 @@ controller.uploadToYouTube = async (req, res) => {
 async function download(url, dest) {
   const res = await fetch(url);
   if (!res.ok) throw new Error("Download failed: " + url);
-  const fileStream = fs.createWriteStream(dest);
+  const fileStream = fsPromises.createWriteStream(dest);
   await new Promise((r, e) => {
     res.body.pipe(fileStream);
     res.body.on("error", e);
