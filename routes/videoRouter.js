@@ -7,7 +7,7 @@ router.post("/video-sync", videoSync);
 router.post("/api/render", renderVideo);
 router.post("/api/export", exportVideo);
 router.get("/auth/youtube", authYouTube);
-router.get("/rest/oauth2-credential/callback", handleYouTubeCallback);
+router.get("/google/callback", handleYouTubeCallback); 
 router.post("/api/upload-youtube", uploadToYouTube);
 
 module.exports = router;

@@ -14,7 +14,9 @@ const ffmpegPath = require("ffmpeg-static");
 const os = require("os");
 const { exec } = require("child_process");
 const { google } = require("googleapis");
-const OAuth2 = require("google-auth-library").OAuth2Client;
+const { Readable } = require('stream');
+//const OAuth2 = require("google-auth-library").OAuth2Client;
+const OAuth2 = google.auth.OAuth2;
 
 // Cấu hình OAuth2 cho YouTube
 const oauth2Client = new OAuth2(
@@ -349,15 +351,18 @@ controller.authYouTube = async (req, res) => {
     access_type: "offline",
     scope: ["https://www.googleapis.com/auth/youtube.upload"],
   });
+  console.log("Url: ", url);
   res.redirect(url);
 };
 
 controller.handleYouTubeCallback = async (req, res) => {
   const { code } = req.query;
+  console.log("Code: ", code);
   try {
     const { tokens } = await oauth2Client.getToken(code);
+    console.log("Tokens: ", tokens);
     const userId = req.session.userId;
-    await models.User.update(
+     await models.User.update(
       {
         youtubeAccessToken: tokens.access_token,
         youtubeRefreshToken: tokens.refresh_token,
@@ -420,7 +425,7 @@ controller.uploadToYouTube = async (req, res) => {
         },
       },
       media: {
-        body: fsPromises.createReadStream(videoFile),
+        body: fs.createReadStream(videoFile),
       },
     });
 
@@ -449,18 +454,20 @@ controller.uploadToYouTube = async (req, res) => {
   } catch (err) {
     console.error("Error uploading to YouTube:", err.message);
     return res.status(500).json({ success: false, message: "Error uploading to YouTube" });
-  }
+  } 
 };
 
 // Hàm download (tái sử dụng từ index.js)
 async function download(url, dest) {
   const res = await fetch(url);
-  if (!res.ok) throw new Error("Download failed: " + url);
-  const fileStream = fsPromises.createWriteStream(dest);
-  await new Promise((r, e) => {
-    res.body.pipe(fileStream);
-    res.body.on("error", e);
-    fileStream.on("finish", r);
+  if (!res.ok) throw new Error(`Download failed: ${url}`);
+  const fileStream = fs.createWriteStream(dest);
+  const nodeStream = Readable.fromWeb(res.body); // Convert web stream to Node.js stream
+  await new Promise((resolve, reject) => {
+    nodeStream.pipe(fileStream);
+    nodeStream.on('error', reject);
+    fileStream.on('finish', resolve);
+    fileStream.on('error', reject);
   });
 }
 
