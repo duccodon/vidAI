@@ -30,15 +30,14 @@
 
  <!-- THAY ĐỔI DATA TRUYỀN VÀO Ở ĐÂY -->
 <form action="/Video/video-sync" method="POST">
-  <!-- Hidden input để truyền data -->
-  <!-- Các trường dữ liệu cần thiết cho video -->
   <input type="hidden" name="audioUrl" value="/img/assets/audio1.mp3">
   <input type="hidden" name="title" value="Tiêu đề video">
   <input type="hidden" name="description" value="Mô tả chi tiết">
   <input type="hidden" name="topic" value="Giới thiệu">
-  <input type="hidden" name="images" value='[{"src":"/img/assets/image1.jpg","start":0,"duration":5}]'>
+  <input type="hidden" name="jsonPath" value="/data/generated_timeline_v2.json">
 
   <button type="submit" class="fixed bottom-4 right-4 bg-blue-500 text-white rounded-full p-3 shadow-lg hover:bg-blue-600 transition duration-300">
+    <!-- biểu tượng -->
     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
     </svg>

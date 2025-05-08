@@ -147,27 +147,9 @@
     </div>
   </div>
     <script>
-
         const imageForm = document.getElementById('imageForm');
         const imageTimeline = document.getElementById('imageTimeline');
         const playPauseBtn = document.getElementById('playPauseBtn');
-      
-        const imageFilenames = [
-        "image1.jpg", "image2.jpg", "image3.jpg", "image4.jpg", "image5.jpg",
-        "image1.jpg", "image2.jpg", "image3.jpg", "image4.jpg", "image5.jpg"
-        ];
-
-        window.metadata = {{{json metadata}}};
-
-        imageFilenames.forEach((filename) => {
-          const img = document.createElement('img');
-          img.src = `/img/assets/${filename}`;
-          img.className = 'h-24 w-full object-cover border rounded-lg shadow cursor-pointer';
-          img.onclick = () => {
-              selectedPreview.src = `/img/assets/${filename}`;
-          };
-          imageForm.appendChild(img);
-        });
         const imageScale = document.getElementById('imageScale');
         const audioScale = document.getElementById('audioScale');
         const waveform = document.getElementById('waveform');
@@ -183,7 +165,7 @@
         const resolutionSelect = document.getElementById('resolutionSelect');
         const cancelPublish = document.getElementById('cancelPublish');
         const confirmPublish = document.getElementById('confirmPublish');
-
+        window.metadata = {{{json metadata}}};
         function updateTimelineMarks(duration) {
           const step = 5;
           const pps = waveform.scrollWidth / duration;
@@ -259,6 +241,14 @@
         wavesurfer.on('ready', () => {
         const duration = wavesurfer.getDuration();
         updateTimelineMarks(duration);
+
+        if (metadata && Array.isArray(metadata.timeline)) {
+          metadata.timeline.forEach(item => {
+            const { src, start, duration } = item;
+            const isVideo = src.endsWith('.mp4') || src.endsWith('.mov');
+            imageManager.addImage(src, start, duration, isVideo);
+          });
+        }
         });
 
         wavesurfer.on('audioprocess', () => {
@@ -392,10 +382,10 @@
 
     <script type="module">
         //SCRIPT JS CHO BEHAVIOUR TIMELINE ẢNH
-         const metadata = window.metadata;
-
+        const metadata = window.metadata;
+        console.log("📦 Metadata:", metadata);
+        
         import { ImageTimelineManager } from '/js/imageTimelineManager.js';
-
         const timelineElement = document.getElementById('imageTimeline');
         const selectedPreview = document.getElementById('selectedPreview');
         const moveBtn = document.getElementById('moveToTimeline');
@@ -407,30 +397,157 @@
         () => wavesurfer.getDuration()
         );
         window.imageManager = imageManager;  // export ra global
-        const imageFilenames = [
-        "image1.jpg", "image2.jpg", "image3.jpg", "image4.jpg", "image5.jpg",
-        "image1.jpg", "image2.jpg", "image3.jpg", "image4.jpg", "image5.jpg"
+        /*const imageFilenames = [
+        "image1.jpg", "image2.jpg", "image3.jpg", "image4.jpg", "image5.jpg", "video2.mp4",
         ];
 
         imageFilenames.forEach((filename) => {
-        const img = document.createElement('img');
-        img.src = `/img/assets/${filename}`;
-        img.className = 'h-24 w-full object-cover border rounded-lg shadow cursor-pointer';
-        img.onclick = () => { //set selected image to preview
-            selectedPreview.src = `/img/assets/${filename}`;
-            console.log("Preview selected:", selectedPreview.src);
-        };
-        imageForm.appendChild(img);
+          const isVideo = filename.endsWith('.mp4') || filename.endsWith('.mov');
+          const wrapper = document.createElement('div');
+          wrapper.className = 'relative';
+
+          const thumb = document.createElement(isVideo ? 'video' : 'img');
+          thumb.src = `/img/assets/${filename}`;
+          if (isVideo) {
+            thumb.muted = true;
+            thumb.loop = true;
+            thumb.autoplay = true;
+            thumb.className = 'h-24 w-full object-cover border rounded-lg shadow cursor-pointer border-yellow-500';
+            thumb.onloadeddata = () => thumb.pause(); // dừng sau khi có frame đầu
+          } else {
+            thumb.className = 'h-24 w-full object-cover border rounded-lg shadow cursor-pointer';
+          }
+
+          thumb.onclick = () => {
+            const isVideo = filename.endsWith('.mp4') || filename.endsWith('.mov');
+            const isImage = filename.endsWith('.jpg') || filename.endsWith('.png');
+            const realPath = `/img/assets/${filename}`;
+            selectedPreview.setAttribute('data-is-video', isVideo);
+            selectedPreview.setAttribute('data-src', realPath); // 👈 lưu lại đường dẫn gốc
+
+            if (isVideo) {
+              const tempVideo = document.createElement('video');
+              tempVideo.src = realPath;
+              tempVideo.crossOrigin = 'anonymous';
+              tempVideo.preload = 'metadata';
+              tempVideo.muted = true;
+
+              tempVideo.addEventListener('loadeddata', () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = tempVideo.videoWidth;
+                canvas.height = tempVideo.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(tempVideo, 0, 0, canvas.width, canvas.height);
+
+                const thumbnailDataURL = canvas.toDataURL('image/jpeg');
+                selectedPreview.src = thumbnailDataURL;
+              });
+
+              tempVideo.play().then(() => {
+                tempVideo.pause();
+              });
+            } else {
+              selectedPreview.src = realPath;
+            }
+          };
+
+          wrapper.appendChild(thumb);
+
+          // Gắn biểu tượng video
+          if (isVideo) {
+            const icon = document.createElement('div');
+            icon.className = 'absolute top-1 right-1 bg-yellow-400 text-white text-xs px-1 py-0.5 rounded shadow';
+            icon.textContent = '🎥';
+            wrapper.appendChild(icon);
+          }
+
+          imageForm.appendChild(wrapper);
+        });
+        */
+        // Tạo các ảnh từ metadata.timeline
+
+        metadata.timeline.forEach((item) => {
+          const filename = item.src;
+          const isVideo = filename.endsWith('.mp4') || filename.endsWith('.mov');
+
+          const wrapper = document.createElement('div');
+          wrapper.className = 'relative';
+
+          const thumb = document.createElement(isVideo ? 'video' : 'img');
+          const realPath = `/img/assets/${filename}`;
+          thumb.src = realPath;
+
+          if (isVideo) {
+            thumb.muted = true;
+            thumb.loop = true;
+            thumb.autoplay = true;
+            thumb.className = 'h-24 w-full object-cover border rounded-lg shadow cursor-pointer border-yellow-500';
+            thumb.onloadeddata = () => thumb.pause();
+          } else {
+            thumb.className = 'h-24 w-full object-cover border rounded-lg shadow cursor-pointer';
+          }
+
+          thumb.onclick = () => {
+            selectedPreview.setAttribute('data-is-video', isVideo);
+            selectedPreview.setAttribute('data-src', realPath);
+
+            if (isVideo) {
+              const tempVideo = document.createElement('video');
+              tempVideo.src = realPath;
+              tempVideo.crossOrigin = 'anonymous';
+              tempVideo.preload = 'metadata';
+              tempVideo.muted = true;
+
+              tempVideo.addEventListener('loadeddata', () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = tempVideo.videoWidth;
+                canvas.height = tempVideo.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(tempVideo, 0, 0, canvas.width, canvas.height);
+
+                const thumbnailDataURL = canvas.toDataURL('image/jpeg');
+                selectedPreview.src = thumbnailDataURL;
+              });
+
+              tempVideo.play().then(() => tempVideo.pause());
+            } else {
+              selectedPreview.src = realPath;
+            }
+          };
+
+          wrapper.appendChild(thumb);
+
+          if (isVideo) {
+            const icon = document.createElement('div');
+            icon.className = 'absolute top-1 right-1 bg-yellow-400 text-white text-xs px-1 py-0.5 rounded shadow';
+            icon.textContent = '🎥';
+            wrapper.appendChild(icon);
+          }
+
+          imageForm.appendChild(wrapper);
         });
 
-        moveBtn.onclick = () => { // di chuyển ảnh từ preview vào timeline
-        if (selectedPreview.src) {
-            const src = selectedPreview.src;
-            const start = imageManager.getNextAvailableStart();
-            imageManager.addImage(src, start, 5); // thời gian mặc định là 5 giây
-        }
-        };
+        moveBtn.onclick = () => {
+          const realSrc = selectedPreview.getAttribute('data-src');
+          const isVideo = selectedPreview.getAttribute('data-is-video') === 'true';
 
+          if (realSrc) {
+            const start = imageManager.getNextAvailableStart();
+
+            if (isVideo) {
+              // Lấy duration video rồi thêm
+              const videoEl = document.createElement('video');
+              videoEl.src = realSrc;
+              videoEl.preload = 'metadata';
+              videoEl.addEventListener('loadedmetadata', () => {
+                const duration = Math.floor(videoEl.duration);
+                imageManager.addImage(realSrc, start, duration, true);
+              });
+            } else {
+              imageManager.addImage(realSrc, start, 5, false);
+            }
+          }
+        };
         // Gọi từ console để debug
         window.getImageData = () => {
             const data = imageManager.getAllImages();

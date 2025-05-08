@@ -1,5 +1,5 @@
 export class ImageTimelineManager {
-    constructor(timelineElement, getTimelineWidth, getAudioDuration, pps) {
+    constructor(timelineElement, getTimelineWidth, getAudioDuration) {
       this.timelineElement = timelineElement;
       this.images = [];
       this.selectedWrapper = null;
@@ -11,7 +11,7 @@ export class ImageTimelineManager {
       return this.getTimelineWidth() / this.getAudioDuration();
     }
   
-    addImage(src, start, duration = 5) {
+    addImage(src, start, duration = 5, isVideo = false) {
       if (start === undefined) {
         start = this.getNextAvailableStart();
       }
@@ -61,7 +61,7 @@ export class ImageTimelineManager {
       rightResizer.className = 'resizer w-2 h-full bg-blue-500 cursor-ew-resize absolute right-0 top-0';
       leftResizer.className = 'resizer w-2 h-full bg-blue-500 cursor-ew-resize absolute left-0 top-0';
   
-      const imageData = { wrapper, src, start, duration };
+      const imageData = { wrapper, src, start, duration, isVideo };
       this.images.push(imageData);
   
       const updateTime = () => {
@@ -213,8 +213,15 @@ export class ImageTimelineManager {
   
       inner.appendChild(img);
       wrapper.appendChild(inner);
-      wrapper.appendChild(leftResizer);
-      wrapper.appendChild(rightResizer);
+      if (!isVideo) {
+        wrapper.appendChild(leftResizer);
+        wrapper.appendChild(rightResizer);
+        // tiếp tục bind sự kiện resize như cũ
+      } else {
+        // ẩn hoặc không bind sự kiện resize
+        leftResizer.style.display = 'none';
+        rightResizer.style.display = 'none';
+      }
       this.timelineElement.appendChild(wrapper);
   
       const checkAutoDelete = () => {
@@ -236,7 +243,7 @@ export class ImageTimelineManager {
     }
   
     getAllImages() {
-      return this.images.map(({ src, start, duration }) => ({ src, start, duration }));
+      return this.images.map(({ src, start, duration, isVideo}) => ({ src, start, duration, isVideo}));
     }
   
     updateImageData(wrapper) {
@@ -258,5 +265,37 @@ export class ImageTimelineManager {
       );
       return last.start + last.duration;
     }
+    generateVideoThumbnail(videoSrc, callback) {
+      const video = document.createElement('video');
+      video.src = videoSrc;
+      video.crossOrigin = 'anonymous';
+      video.muted = true;
+      video.playsInline = true;
+    
+      video.addEventListener('loadedmetadata', () => {
+        try {
+          video.currentTime = Math.min(0.1, video.duration / 2);
+        } catch (e) {
+          console.error('Lỗi khi đặt currentTime', e);
+          callback(null);
+        }
+      });
+    
+      video.addEventListener('seeked', () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const thumbnailDataUrl = canvas.toDataURL('image/png');
+        callback(thumbnailDataUrl);
+      });
+    
+      video.addEventListener('error', (e) => {
+        console.error('Không thể tạo thumbnail:', e);
+        callback(null);
+      });
+    }
+    
   }
   

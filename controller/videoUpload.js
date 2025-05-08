@@ -114,31 +114,49 @@ controller.exportVideo = async (req, res) => {
       const videoPaths = [];
   
       for (let i = 0; i < fullTimeline.length; i++) {
-          const { src, duration } = fullTimeline[i];
-          const inputImage = path.join(publicDir, normalizePath(src));
-          const outVideo = path.join(tempDir, `clip${i}.mp4`);
-  
-          await new Promise((resolve, reject) => {
-          ffmpeg()
-              .input(inputImage)
-              .inputOptions('-loop 1')
+        const { src, duration, isVideo } = fullTimeline[i];
+        const inputPath = path.join(publicDir, normalizePath(src));
+        const outVideo = path.join(tempDir, `clip${i}.mp4`);
+      
+        await new Promise((resolve, reject) => {
+          const ff = ffmpeg().input(inputPath);
+      
+          if (isVideo) {
+            ff
               .outputOptions([
-              `-vf scale=${scaleOption}`,
-              '-preset ultrafast',
-              '-b:v 1000k',
-              '-r 25',
-              '-pix_fmt yuv420p',
-              `-t ${Math.max(0.05, Math.round(duration * 100) / 100)}`,
-              '-y'
+                `-t ${Math.max(0.05, Math.round(duration * 100) / 100)}`,
+                `-vf scale=${scaleOption}:force_original_aspect_ratio=decrease,pad=${scaleOption}:(ow-iw)/2:(oh-ih)/2:color=black`,
+                '-preset ultrafast',
+                '-b:v 1000k',
+                '-r 25',
+                '-pix_fmt yuv420p',
+                '-y'
               ])
               .videoCodec('libx264')
               .save(outVideo)
               .on('end', resolve)
               .on('error', reject);
-          });
-  
-          videoPaths.push(outVideo);
-      }
+          } else {
+            ff
+              .inputOptions('-loop 1')
+              .outputOptions([
+                `-vf scale=${scaleOption}:force_original_aspect_ratio=decrease,pad=${scaleOption}:(ow-iw)/2:(oh-ih)/2:color=black`,
+                '-preset ultrafast',
+                '-b:v 1000k',
+                '-r 25',
+                '-pix_fmt yuv420p',
+                `-t ${Math.max(0.05, Math.round(duration * 100) / 100)}`,
+                '-y'
+              ])
+              .videoCodec('libx264')
+              .save(outVideo)
+              .on('end', resolve)
+              .on('error', reject);
+          }
+        });
+      
+        videoPaths.push(outVideo);
+      }      
   
       const concatList = videoPaths.map(p => `file '${p.replace(/\\/g, '/')}'`).join('\n');
       fs.writeFileSync(videoListPath, concatList);
@@ -212,31 +230,51 @@ controller.renderVideo = async (req, res) => {
       const videoPaths = [];
     
       for (let i = 0; i < fullTimeline.length; i++) {
-        const { src, duration } = fullTimeline[i];
-        const inputImage = path.join(publicDir, normalizePath(src));
+        const { src, duration, isVideo } = fullTimeline[i];
+        const inputPath = path.join(publicDir, normalizePath(src));
         const outVideo = path.join(tempDir, `clip${i}.mp4`);
-    
+        const scaleOption = '640:360'; 
         await new Promise((resolve, reject) => {
-          ffmpeg()
-            .input(inputImage)
-            .inputOptions('-loop 1')
-            .outputOptions([
-              '-vf scale=640:360',
-              '-preset ultrafast',
-              '-b:v 500k',
-              '-r 15',
-              '-pix_fmt yuv420p',
-              '-t ' + duration,
-              '-y'
-            ])          
-            .videoCodec('libx264')
-            .save(outVideo)
-            .on('end', resolve)
-            .on('error', reject);
-        }); 
-    
+          const ff = ffmpeg().input(inputPath);
+      
+          if (isVideo) {
+            ff
+              .outputOptions([
+                `-ss 0`,                 // Nếu muốn trim chính xác: `-ss ${start}`
+                `-t ${duration}`,
+                `-vf scale=${scaleOption}:force_original_aspect_ratio=decrease,pad=${scaleOption}:(ow-iw)/2:(oh-ih)/2:color=black`,
+                '-preset ultrafast',
+                '-b:v 500k',
+                '-r 15',
+                '-pix_fmt yuv420p',
+                '-y'
+              ])
+              .videoCodec('libx264')
+              .save(outVideo)
+              .on('end', resolve)
+              .on('error', reject);
+          } else {
+            ff
+              .inputOptions('-loop 1')
+              .outputOptions([
+                `-vf scale=${scaleOption}:force_original_aspect_ratio=decrease,pad=${scaleOption}:(ow-iw)/2:(oh-ih)/2:color=black`,
+                '-preset ultrafast',
+                '-b:v 500k',
+                '-r 15',
+                '-pix_fmt yuv420p',
+                `-t ${duration}`,
+                '-y'
+              ])
+              .videoCodec('libx264')
+              .save(outVideo)
+              .on('end', resolve)
+              .on('error', reject);
+          }
+        });
+      
         videoPaths.push(outVideo);
       }
+      
     
       // Step 3: Write input.txt for concat
       const concatList = videoPaths.map(p => `file '${p.replace(/\\/g, '/')}'`).join('\n');
@@ -263,16 +301,16 @@ controller.renderVideo = async (req, res) => {
 };
 
 controller.videoSync = async (req, res) => {
-  // Gửi dữ liệu về giao diện
-  const { audioUrl, title, description, topic, images } = req.body;
+  const { audioUrl, title, description, topic, jsonPath } = req.body;
 
-  let imageList = [];
+  let timelineData = [];
   try {
-    imageList = typeof images === 'string' ? JSON.parse(images) : images;
+    const absolutePath = path.join(__dirname, '../public', jsonPath);
+    const raw = fs.readFileSync(absolutePath, 'utf-8');
+    timelineData = JSON.parse(raw);
   } catch (e) {
-    console.warn('⚠ Không parse được images:', images);
+    console.warn('⚠ Không đọc được JSON từ', jsonPath, ':', e.message);
   }
-
   res.render("video-sync", {
     headerName: "Đồng bộ video",
     page: 6,
@@ -283,9 +321,9 @@ controller.videoSync = async (req, res) => {
       title,
       description,
       topic,
-      images: imageList
+      timeline: timelineData // ✅ dùng tên mới rõ ràng
     }
-  });
+  });  
 };
 
 module.exports = controller
