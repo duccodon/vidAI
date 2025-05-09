@@ -554,5 +554,30 @@ controller.mergeAudio = async (req, res) => {
     .run();
 };
 
+controller.deleteVideo = async (req, res) => {
+  const { videoId } = req.params;
+  console.log("Video ID:", videoId);
+  if (!videoId) {
+    return res.status(400).json({ success: false, message: "Video ID is required" });
+  }
+  const userId = req.session.userId;
 
+  try {
+    const video = await models.Video.findByPk(videoId);
+    if (!video || video.userId !== userId) {
+      return res.status(404).json({ success: false, message: "Video not found or unauthorized" });
+    }
+
+    // Xóa video trên Cloudinary
+    await cloudinary.uploader.destroy(video.cloudinaryId, { resource_type: "video" });
+    console.log("Video deleted from Cloudinary:", video.cloudinaryId);
+    // Xóa video trong cơ sở dữ liệu
+    await models.Video.destroy({ where: { id: videoId } });
+    console.log("Video deleted from database:", videoId);
+    return res.json({ success: true, message: "Video deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting video:", err.message);
+    res.status(500).json({ success: false, message: "Error deleting video" });
+  }
+}
 module.exports = controller;

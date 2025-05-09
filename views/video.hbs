@@ -2,7 +2,22 @@
   {{#if videos.length}}
     <ul class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {{#each videos}}
-        <li class="bg-gray-50 rounded-xl border border-gray-200 shadow hover:shadow-md p-4 transition duration-300" data-video-id="{{this.id}}">
+        <li class="bg-gray-50 rounded-xl border border-gray-200 shadow hover:shadow-md p-4 transition duration-300 relative" data-video-id="{{this.id}}">
+          
+          <!-- Nút ba chấm (option) -->
+          <button class="absolute top-2 right-2 text-gray-600 hover:text-gray-800 focus:outline-none" id="optionBtn-{{this.id}}">
+            <!-- SVG icon for 3 vertical dots (Ba chấm) -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6h0M12 12h0M12 18h0" />
+            </svg>
+          </button>
+
+          <!-- Dropdown menu -->
+          <div class="dropdown-menu absolute hidden bg-white text-black shadow-lg rounded w-48 right-2 top-8 z-20">
+            <button class="w-full text-left px-4 py-2 text-sm hover:bg-yellow-500 hover:text-white" data-video-id="{{this.id}}">Edit</button>
+            <button class="delete-btn w-full text-left px-4 py-2 text-sm hover:bg-red-500 hover:text-white" data-video-id="{{this.id}}">Delete</button>
+          </div>
+
           <div class="mb-2">
             <h3 class="text-lg font-semibold text-gray-800">{{this.title}}</h3>
             <p class="text-sm text-gray-500 mb-1">Chủ đề: {{this.topic}}</p>
@@ -29,6 +44,11 @@
   {{else}}
     <p class="text-gray-500 text-center mt-8 text-lg">Không có video nào. <a href="/homepage" class="text-blue-500">Tạo video ngay!</a></p>
   {{/if}}
+
+  <!-- Modal tải lên YouTube -->
+  <!-- ... (The modal code remains unchanged) -->
+
+</div>
 
   <!-- Modal tải lên YouTube -->
   <div id="youtubeUploadModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
@@ -63,6 +83,16 @@
       </form>
     </div>
   </div>
+    <!-- Modal xác nhận xóa -->
+  <div id="deleteConfirmModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
+      <h2 class="text-lg font-semibold mb-2">Are you sure you want to delete this video?</h2>
+      <div class="flex justify-between gap-2">
+        <button id="cancelDelete" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded">Cancel</button>
+        <button id="confirmDelete" class="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded">Delete</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Form hiện tại để đồng bộ video -->
   <form action="/Video/video-sync" method="POST">
@@ -88,6 +118,75 @@
     const titleInput = document.getElementById("uploadTitle");
     const descriptionInput = document.getElementById("uploadDescription");
     const thumbnailInput = document.getElementById("thumbnailInput");
+    const optionBtns = document.querySelectorAll("[id^='optionBtn-']");
+
+    // Toggle dropdown visibility when clicking on option button
+    optionBtns.forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        const videoId = e.target.closest('button').id.split('-')[1]; // Get video ID
+        const dropdownMenu = document.querySelector(`#optionBtn-${videoId}`).nextElementSibling;
+        dropdownMenu.classList.toggle("hidden"); // Toggle dropdown visibility
+      });
+    });
+
+    // Close dropdown if clicking outside of it
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest(".dropdown-menu") && !e.target.closest("[id^='optionBtn-']")) {
+        document.querySelectorAll(".dropdown-menu").forEach(dropdown => {
+          dropdown.classList.add("hidden");
+        });
+      }
+    });
+
+
+    // Xử lý nút Delete
+    document.querySelectorAll(".delete-btn").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        const videoId = e.target.dataset.videoId;
+        const deleteModal = document.getElementById("deleteConfirmModal");
+        const confirmDeleteBtn = document.getElementById("confirmDelete");
+        const cancelDeleteBtn = document.getElementById("cancelDelete");
+
+        deleteModal.classList.remove("hidden");
+
+        // Xử lý xác nhận xóa
+      confirmDeleteBtn.onclick = async () => {
+        try {
+          console.log("Deleting video with ID:", videoId);
+          const res = await fetch(`/Video/api/delete-video/${videoId}`, { method: "DELETE" });
+          const tempVideoId = videoId; // Lưu ID video tạm thời
+          // Kiểm tra nếu HTTP response không thành công
+          if (!res.ok) {
+            throw new Error(`HTTP error! Status: ${res.status}`);
+          }
+
+          const result = await res.json();
+          console.log("Result from server:", result);  // Log kết quả trả về
+
+          if (result.success) {
+            // Tự động ẩn modal mà không cần reload trang
+            deleteModal.classList.add("hidden");
+            // Xóa video khỏi giao diện ngay lập tức mà không cần tải lại trang
+            const videoItem = document.querySelector(`li[data-video-id="${tempVideoId}"]`);
+            if (videoItem) {
+              videoItem.remove();
+            }
+          } else {
+            console.error("Error deleting video:", result.message);
+            alert("Error deleting video: " + result.message);
+          }
+        } catch (err) {
+          console.error(err);
+          alert("Error deleting video");
+        }
+      };
+
+        // Đóng modal xác nhận xóa
+        cancelDeleteBtn.onclick = () => {
+          deleteModal.classList.add("hidden");
+        };
+      });
+    });
 
     // Xử lý nút Upload to YouTube
     document.querySelectorAll(".upload-youtube-btn").forEach(btn => {
