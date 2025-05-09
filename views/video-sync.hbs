@@ -35,8 +35,10 @@
     }
     #imageTimeline {
     position: relative; /* Bắt buộc để ảnh con định vị đúng */
-    
-  }
+    margin-bottom: 2px;
+    min-height: 100px; /* Đảm bảo chiều cao đủ cho viền cam của video */
+    box-sizing: border-box;
+    }
   #imageTimeline * {
     user-select: none; /* Ngăn chọn text hoặc ảnh khi kéo */
   }

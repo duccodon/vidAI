@@ -51,10 +51,22 @@ export class ImageTimelineManager {
       inner.style.height = '100%';
       inner.style.margin = '0 auto';
   
-      const img = document.createElement('img');
+      const img = document.createElement(isVideo ? 'video' : 'img');
       img.src = src;
       img.className = 'h-full object-contain pointer-events-none';
       img.style.maxWidth = '100px';
+
+
+      if (isVideo) {
+        img.muted = true;
+        img.loop = true;
+        img.autoplay = true;
+        img.className = 'h-24 w-full object-cover border rounded-lg shadow cursor-pointer border-yellow-500 padding-1';
+        img.onloadeddata = () => {
+          img.pause();  // Dừng video sau khi load xong frame đầu tiên
+        };  
+      }
+
   
       const rightResizer = document.createElement('div');
       const leftResizer = document.createElement('div');
