@@ -312,16 +312,17 @@ controller.renderVideo = async (req, res) => {
       });
 };
 
+const moment = require('moment');
+
 controller.videoSync = async (req, res) => {
   const { audioUrl, title, description, topic, jsonPath } = req.body;
-
+  
   console.log('Audio URL:', audioUrl);
   console.log('Title:', title);
   console.log('Description:', description);
   console.log('Topic:', topic);
   console.log('JSON Path:', jsonPath);
 
-  
   let timelineData = [];
   try {
     const absolutePath = path.join(__dirname, '../public', jsonPath);
@@ -331,20 +332,48 @@ controller.videoSync = async (req, res) => {
   } catch (e) {
     console.warn('⚠ Không đọc được JSON từ', jsonPath, ':', e.message);
   }
-  res.render("video-sync", {
-    headerName: "Đồng bộ video",
-    page: 6,
-    layout: "layout",
-    title: "Đồng bộ video",
-    metadata: {
-      audioUrl,
-      title,
-      description,
-      topic,
-      timeline: timelineData // ✅ dùng tên mới rõ ràng
-    }
-  });  
+
+  // Lấy danh sách các audioUrl từ timeline
+  const audioUrls = timelineData.map(item => item.audioUrl);
+  const audioPaths = audioUrls.map(url => path.join(__dirname, '../public', 'audios', url));
+
+  // Kiểm tra nếu chỉ có audio, không có video
+  if (audioUrls.length > 0) {
+    const outputAudioPath = path.join(__dirname, '../public/audios', `merged_audio_${Date.now()}.mp3`);
+    const cmd = `"${ffmpegPath}" -i "concat:${audioPaths.join('|')}" -c:a libmp3lame -b:a 192k -y "${outputAudioPath}"`;
+
+    console.log('Running command:', cmd);
+
+    exec(cmd, (err, stdout, stderr) => {
+      if (err) {
+        console.error('❌ FFmpeg concat error:', stderr);
+        return res.status(500).send('Render error');
+      }
+
+      console.log('Audio merge completed');
+      // Trả về audio đã ghép
+      res.render("video-sync", {
+        headerName: "Đồng bộ video",
+        page: 6,
+        layout: "layout",
+        title: "Đồng bộ video",
+        metadata: {
+          audioUrl: `/audios/${path.basename(outputAudioPath)}`, // Gán đường dẫn của audio đã merge vào audioUrl
+          title,
+          description,
+          topic,
+          timeline: timelineData
+        }
+      });
+
+      // Sau khi render xong, xóa các file âm thanh nhỏ đã merge
+      //audioPaths.forEach(filePath => fs.unlinkSync(filePath));  // Xóa từng file audio nhỏ (UNCOMMENT khi đã có JSON thực)
+    });
+  } else {
+    return res.status(400).json({ error: 'No audio files to merge' });
+  }
 };
+
 
 controller.authYouTube = async (req, res) => {
   const url = oauth2Client.generateAuthUrl({
@@ -470,5 +499,60 @@ async function download(url, dest) {
     fileStream.on('error', reject);
   });
 }
+
+controller.mergeAudio = async (req, res) => {
+  const { audioUrls } = req.body; // Dữ liệu gửi từ frontend, mảng các audio URLs
+  
+  if (!audioUrls || audioUrls.length === 0) {
+    return res.status(400).json({ error: 'Không có audio để ghép' });
+  }
+
+  // Tính tổng duration của tất cả các audio
+  let totalDuration = 0;
+  const inputFileListPath = path.join(__dirname, 'input-list.txt');
+  const fileListContent = audioUrls.map(url => {
+    const audioPath = path.join(__dirname, 'public', 'audios', url);
+    console.log('Đường dẫn audio:', audioPath);
+    const stats = fs.statSync(audioPath);
+    totalDuration += Math.floor(stats.size / 1024 / 1024); // Đây chỉ là ví dụ, bạn có thể dùng cách tính đúng hơn cho thời gian âm thanh
+    return `file '${audioPath}'`; // Lưu đường dẫn của audio vào file danh sách
+  }).join('\n');
+
+  // Viết danh sách vào file
+  fs.writeFileSync(inputFileListPath, fileListContent);
+
+  // Tạo tên file mới cho audio đã merge theo thời gian hiện tại và tổng duration
+  const timeNow = moment().format('HHmmss');  // Lấy thời gian hiện tại theo định dạng HHmmss
+  const outputFileName = `audio_${timeNow}_${totalDuration}.mp3`;
+  const outputPath = path.join(__dirname, 'public', 'audios', outputFileName);
+
+  // Dùng FFmpeg để ghép các audio lại
+  ffmpeg()
+    .input(inputFileListPath)
+    .inputOptions('-f concat', '-safe 0') // Các option để ghép các file audio
+    .output(outputPath)
+    .on('end', () => {
+      console.log('Audio merge completed');
+      
+      // Xóa các file âm thanh nhỏ sau khi merge xong
+      audioUrls.forEach(url => {
+        const audioPath = path.join(__dirname, 'public', 'audios', url);
+        fs.unlinkSync(audioPath);  // Xóa từng file audio
+      });
+      
+      // Xóa file danh sách sau khi hoàn thành
+      fs.unlinkSync(inputFileListPath);
+
+      // Trả về tên file đã merge
+      res.json({ success: true, fileName: outputFileName });
+    })
+    .on('error', (err) => {
+      console.error('Error merging audio:', err);
+      fs.unlinkSync(inputFileListPath); // Xóa file danh sách nếu có lỗi
+      res.status(500).json({ error: 'Lỗi khi ghép audio' });
+    })
+    .run();
+};
+
 
 module.exports = controller;

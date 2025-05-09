@@ -405,79 +405,11 @@
         () => wavesurfer.getDuration()
         );
         window.imageManager = imageManager;  // export ra global
-        /*const imageFilenames = [
-        "image1.jpg", "image2.jpg", "image3.jpg", "image4.jpg", "image5.jpg", "video2.mp4",
-        ];
-
-        imageFilenames.forEach((filename) => {
-          const isVideo = filename.endsWith('.mp4') || filename.endsWith('.mov');
-          const wrapper = document.createElement('div');
-          wrapper.className = 'relative';
-
-          const thumb = document.createElement(isVideo ? 'video' : 'img');
-          thumb.src = `/img/assets/${filename}`;
-          if (isVideo) {
-            thumb.muted = true;
-            thumb.loop = true;
-            thumb.autoplay = true;
-            thumb.className = 'h-24 w-full object-cover border rounded-lg shadow cursor-pointer border-yellow-500';
-            thumb.onloadeddata = () => thumb.pause(); // dừng sau khi có frame đầu
-          } else {
-            thumb.className = 'h-24 w-full object-cover border rounded-lg shadow cursor-pointer';
-          }
-
-          thumb.onclick = () => {
-            const isVideo = filename.endsWith('.mp4') || filename.endsWith('.mov');
-            const isImage = filename.endsWith('.jpg') || filename.endsWith('.png');
-            const realPath = `/img/assets/${filename}`;
-            selectedPreview.setAttribute('data-is-video', isVideo);
-            selectedPreview.setAttribute('data-src', realPath); // 👈 lưu lại đường dẫn gốc
-
-            if (isVideo) {
-              const tempVideo = document.createElement('video');
-              tempVideo.src = realPath;
-              tempVideo.crossOrigin = 'anonymous';
-              tempVideo.preload = 'metadata';
-              tempVideo.muted = true;
-
-              tempVideo.addEventListener('loadeddata', () => {
-                const canvas = document.createElement('canvas');
-                canvas.width = tempVideo.videoWidth;
-                canvas.height = tempVideo.videoHeight;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(tempVideo, 0, 0, canvas.width, canvas.height);
-
-                const thumbnailDataURL = canvas.toDataURL('image/jpeg');
-                selectedPreview.src = thumbnailDataURL;
-              });
-
-              tempVideo.play().then(() => {
-                tempVideo.pause();
-              });
-            } else {
-              selectedPreview.src = realPath;
-            }
-          };
-
-          wrapper.appendChild(thumb);
-
-          // Gắn biểu tượng video
-          if (isVideo) {
-            const icon = document.createElement('div');
-            icon.className = 'absolute top-1 right-1 bg-yellow-400 text-white text-xs px-1 py-0.5 rounded shadow';
-            icon.textContent = '🎥';
-            wrapper.appendChild(icon);
-          }
-
-          imageForm.appendChild(wrapper);
-        });
-        */
-        // Tạo các ảnh từ metadata.timeline
+        
 
         metadata.timeline.forEach((item) => {
-          const filename = item.src;
-          const isVideo = filename.endsWith('.mp4') || filename.endsWith('.mov');
-
+          const filename = item.src;// Lấy tên file  từ metadata
+          const isVideo = filename.endsWith('.mp4') || filename.endsWith('.mov'); // Kiểm tra xem có phải video không
           const wrapper = document.createElement('div');
           wrapper.className = 'relative';
 
@@ -534,6 +466,10 @@
 
           imageForm.appendChild(wrapper);
         });
+
+        console.log("📦 Audio URLs:", metadata.audioUrl); //LOAD VÀO WAVESURFER KHI ĐÃ HOÀN TẤT
+
+        
 
         moveBtn.onclick = () => {
           const realSrc = selectedPreview.getAttribute('data-src');
