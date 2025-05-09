@@ -10,6 +10,7 @@ const audioOutputDir = path.join(__dirname, "../public/audios");
 async function generateAudioScript(engine, voiceId, script) {
   const segments = parseScriptWithIdeas(script);
   const audioResults = [];
+  console.log(JSON.stringify(parseScriptWithIdeas(script), null, 2));
 
   if (!fs.existsSync(audioOutputDir)) {
     fs.mkdirSync(audioOutputDir, { recursive: true });
