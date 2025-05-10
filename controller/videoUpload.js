@@ -11,6 +11,7 @@ const stat = util.promisify(fs.stat);
 const { Video } = require("../models");
 const ffmpeg = require("fluent-ffmpeg");
 const ffmpegPath = require("ffmpeg-static");
+const ffprobePath = require('ffprobe-static').path;
 const os = require("os");
 const { exec } = require("child_process");
 const { google } = require("googleapis");
@@ -33,7 +34,7 @@ const categoryIds = {
 };
 
 ffmpeg.setFfmpegPath(ffmpegPath);
-
+ffmpeg.setFfprobePath(ffprobePath);
 async function saveVideoToDB(videoData) {
   try {
     const video = await Video.create({
@@ -52,6 +53,8 @@ async function saveVideoToDB(videoData) {
     throw err;
   }
 }
+
+
 
 const uploadVideo = async (videoPath, metadata = {}, userId = null) => {
   if (!fs.existsSync(videoPath)) {
@@ -134,7 +137,7 @@ controller.exportVideo = async (req, res) => {
           const ff = ffmpeg().input(inputPath);
       
           if (isVideo) {
-            ff
+            ff.inputOptions([`-stream_loop 500`])
               .outputOptions([
                 `-t ${Math.max(0.05, Math.round(duration * 100) / 100)}`,
                 `-vf scale=${scaleOption}:force_original_aspect_ratio=decrease,pad=${scaleOption}:(ow-iw)/2:(oh-ih)/2:color=black`,
@@ -250,7 +253,7 @@ controller.renderVideo = async (req, res) => {
           const ff = ffmpeg().input(inputPath);
       
           if (isVideo) {
-            ff
+            ff.inputOptions([`-stream_loop 500`])
               .outputOptions([
                 `-ss 0`,                 // Nếu muốn trim chính xác: `-ss ${start}`
                 `-t ${duration}`,

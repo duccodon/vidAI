@@ -225,7 +225,7 @@ export class ImageTimelineManager {
   
       inner.appendChild(img);
       wrapper.appendChild(inner);
-      if (!isVideo) {
+      if (true) {
         wrapper.appendChild(leftResizer);
         wrapper.appendChild(rightResizer);
         // tiếp tục bind sự kiện resize như cũ
