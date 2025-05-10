@@ -162,57 +162,7 @@
 
     <!-- result audio -->
     <div id="audioResultTable" class="mx-4 mb-6">
-      <table class="w-full border border-gray-300 text-left text-sm">
-        <thead>
-          <tr class="bg-gray-100 font-semibold">
-            <th class="border px-4 py-2 w-[5%]">#</th>
-            <th class="border px-4 py-2 w-[55%]">Text</th>
-            <th class="border px-4 py-2 w-[40%]">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td class="border px-4 py-2">1</td>
-            <td class="border px-4 py-2">Cùng khám phá thế giới bí ẩn của ung thư - căn bệnh liên quan đến sự phát triển bất thường của tế bào, có khả năng xâm lấn khắp cơ thể. Khác với khối u lành tính, tế bào ung thư di căn không kiểm soát, gây ra các triệu chứng như xuất huyết, ho kéo dài, sụt cân, hoặc thay đổi thói quen tiêu hóa.</td>
-            <td class="border px-4 py-2">
-              <div class="flex gap-4 items-center">
-                <button class="play-btn px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600" data-audio="/audios/sample/audio_00-00_00-30_0.mp3">Play</button>
-                <button class="record-btn px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">Record</button>
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td class="border px-4 py-2">2</td>
-            <td class="border px-4 py-2">Hơn 100 loại ung thư ảnh hưởng đến con người, nhưng triệu chứng không phải lúc nào cũng rõ ràng. Chẩn đoán sớm và nghiên cứu chuyên sâu là chìa khóa để tìm giải pháp!</td>
-            <td class="border px-4 py-2">
-              <div class="flex gap-4 items-center">
-                <button class="play-btn px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600" data-audio="/audios/sample/audio_00-00_00-30_1.mp3">Play</button>
-                <button class="record-btn px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">Record</button>
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td class="border px-4 py-2">3</td>
-            <td class="border px-4 py-2">Nghiên cứu từ tạp chí Nature hé lộ cách protein NUTF2 trong ung thư vú kháng trị liệu. Kỹ thuật proteomics nguyên trạng (nTDP) giúp xác định các 'phức hợp protein' liên quan đến cơ chế kháng thuốc nhắm vào thụ thể estrogen.</td>
-            <td class="border px-4 py-2">
-              <div class="flex gap-4 items-center">
-                <button class="play-btn px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600" data-audio="/audios/sample/audio_00-30_01-00_0.mp3">Play</button>
-                <button class="record-btn px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">Record</button>
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td class="border px-4 py-2">4</td>
-            <td class="border px-4 py-2">Phát hiện này mở đường cho thuốc ức chế chính xác, ngăn tế bào ung thư 'lẩn trốn' trị liệu. Mỗi bước tiến của khoa học đều là hy vọng mới cho hàng triệu bệnh nhân!</td>
-            <td class="border px-4 py-2">
-              <div class="flex gap-4 items-center">
-                <button class="play-btn px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600" data-audio="/audios/sample/audio_00-30_01-00_1.mp3">Play</button>
-                <button class="record-btn px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">Record</button>
-              </div> 
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="text-center mt-10 text-lg font-semibold">Your audio will be displayed here after generating successfully</div>
 
       <div class="flex justify-center items-center mr-4">
         <button id="finishAudioBtn"
@@ -226,7 +176,7 @@
 
 
   <!-- Section to gen media -->
-  <div id="fourthPage" style="display: none;"
+  <div id="fourthPage" style="display: block;"
     class="fixed top-[3.8rem] sm:top-[5.4rem] left-[100px] h-[calc(100vh-5*1vh-3.8rem)] sm:h-[calc(100vh-5*1vh-7rem)] md:h-[calc(100vh-5*1vh-2rem)] w-[100%] md:w-[93%] bg-white rounded-[1rem] border border-[#ccc] overflow-y-auto overflow-x-hidden z-3">
 
     <div class="flex flex-row justify-between mx-4 my-auto gap-[3rem] py-[1rem]">
@@ -238,6 +188,10 @@
         </div>
       </div>
 
+      <div class="text-center mt-10 text-lg font-semibold">
+        This is final step to generate a video 
+      </div>
+
       <!-- Next button -->
       <div class="flex items-center">
         <div id="mediaBtn"
@@ -247,9 +201,38 @@
       </div>
     </div>
 
-    <div class="text-center mt-10 text-lg font-semibold">
-      This is page to generate media
+    <!-- Media Table -->
+    <div class="mt-10">
+      <table class="min-w-full table-auto text-sm border-collapse">
+        <thead>
+          <tr class="bg-gray-100">
+            <th class="px-4 py-2 text-left">ID</th>
+            <th class="px-4 py-2 text-left">Text</th>
+            <th class="px-4 py-2 text-left">Prompt</th>
+            <th class="px-4 py-2 text-left">Action</th>
+          </tr>
+        </thead>
+        <tbody id="mediaTableBody">
+          <tr>
+            <td class="px-4 py-2">1</td>
+            <td class="px-4 py-2">Generate video from text content</td>
+            <td class="px-4 py-2">
+              <input type="text" class="w-full border border-gray-300 p-2 rounded" placeholder="Enter AI prompt" />
+            </td>
+            <td class="px-4 py-2 text-center">
+              <button class="convert-to-video px-4 py-2 bg-blue-500 text-white rounded">Convert to Video</button>
+              <button class="add-row px-4 py-2 bg-green-500 text-white rounded">+</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Finish Media Button -->
+      <div class="text-center mt-6">
+        <button class="px-8 py-3 bg-blue-600 text-white rounded-full text-lg">Finish Media</button>
+      </div>
     </div>
+    
   </div>
 
 
@@ -523,6 +506,7 @@
             segment.ideas.forEach(idea => {
               console.log("Text:", idea.text);
               console.log("Audio path:", idea.audioPath);
+              console.log("Visual: ", idea.visual);
             });
           });
 
@@ -539,8 +523,8 @@
     
     // Handle finish audio button click
     document.getElementById("finishAudioBtn").addEventListener("click", async function () {
-      const finalJson = await generateFinalJson();
-      console.log("Final JSON:", finalJson);
+      /*const finalJson = await generateFinalJson();
+      console.log("Final JSON:", JSON.stringify(finalJson, null, 2));
       const allHaveAudio = finalJson.every(item => item.audioUrl && item.audioUrl.trim() !== "");
 
       if (!allHaveAudio) {
@@ -548,14 +532,15 @@
         return;
       }
 
-      document.getElementById("fourthPage").style.display = "block";
+      document.getElementById("fourthPage").style.display = "block";*/
+      alert("Please generate audio files fully before proceeding."); 
     });  
   });
 
 
   function updateAudioUI(audioSegments) {
     const tableWrapper = document.getElementById("audioResultTable");
-    tableWrapper.innerHTML = ""; // Clear cũ nếu có
+    tableWrapper.replaceChildren();
 
     let index = 1;
     let tableHTML = `
@@ -573,17 +558,14 @@
     audioSegments.forEach(segment => {
       segment.ideas.forEach(idea => {
         tableHTML += `
-          <tr>
+          <tr data-visual="${encodeURIComponent(idea.visual || "")}">
             <td class="border px-4 py-2">${index++}</td>
             <td class="border px-4 py-2">${idea.text}</td>
-            <td class="border px-4 py-2 flex gap-4 items-center">
-              <button class="play-btn px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
-                data-audio="${idea.audioPath}">
-                Play
-              </button>
-              <button class="record-btn px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">
-                Record
-              </button>
+            <td class="border px-4 py-2">
+              <div class="flex gap-4 items-center">
+                <button class="play-btn px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600" data-audio="${idea.audioPath}">Play</button>
+                <button class="record-btn px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">Record</button>
+              </div>
             </td>
           </tr>
         `;
@@ -607,7 +589,6 @@
 
     document.querySelectorAll(".play-btn").forEach(btn => {
       btn.addEventListener("click", () => {
-        alert("Play audio: " + btn.dataset.audio);
         // If another audio is already playing, pause that audio
         if (currentAudio && currentAudio !== btn.audioInstance) {
           currentAudio.pause();
@@ -730,7 +711,21 @@
       });
     });
 
-    // Save every data except image/vid to JSON
+    // Handle finish audio button click
+    document.getElementById("finishAudioBtn").addEventListener("click", async function () {
+      const finalJson = await generateFinalJson();
+      console.log("Final JSON:", JSON.stringify(finalJson, null, 2));
+      const allHaveAudio = finalJson.every(item => item.audioUrl && item.audioUrl.trim() !== "");
+
+      if (!allHaveAudio) {
+        alert("Please generate audio files fully before proceeding.");
+        return;
+      }
+
+      document.getElementById("fourthPage").style.display = "block";
+    });  
+  }
+  // Save every data except image/vid to JSON
     async function generateFinalJson() {
       const rows = document.querySelectorAll("tbody tr");
       const result = [];
@@ -740,6 +735,7 @@
         const text = row.querySelector("td:nth-child(2)").innerText.trim();
         const playBtn = row.querySelector(".play-btn");
         const recordBtn = row.querySelector(".record-btn");
+        const visual = decodeURIComponent(row.dataset.visual || "");
 
         const hasRecorded = recordBtn.dataset.recordedUrl;
         const audioUrl = hasRecorded ? `/src/${recordBtn.dataset.recordedUrl}` : playBtn.dataset.audio;
@@ -756,7 +752,8 @@
           duration: duration,
           audioUrl: audioUrl,
           src: "",
-          content: text
+          content: text,
+          visual: visual,
         });
 
         startTime += duration;
@@ -765,21 +762,6 @@
       console.log("Final JSON:", JSON.stringify(result, null, 2));
       return result;
     }
-
-    // Handle finish audio button click
-    document.getElementById("finishAudioBtn").addEventListener("click", async function () {
-      const finalJson = await generateFinalJson();
-      console.log("Final JSON:", finalJson);
-      const allHaveAudio = finalJson.every(item => item.audioUrl && item.audioUrl.trim() !== "");
-
-      if (!allHaveAudio) {
-        alert("Please generate audio files fully before proceeding.");
-        return;
-      }
-
-      document.getElementById("fourthPage").style.display = "block";
-    });  
-  }
   // Hàm phụ để lấy thời lượng file audio
   function getAudioDuration(url) {
     return new Promise((resolve) => {
@@ -794,6 +776,125 @@
     });
   }
 
+
+  // fourth page
+  const tableBody = document.getElementById('mediaTableBody');
+  tableBody.addEventListener('click', function (event) {
+    const target = event.target;
+    const jsonData = window.jsonData || []; 
+
+    // Khi click vào nút "+"
+    if (target.classList.contains('add-row')) {
+      console.log("Add row clicked");
+      const row = target.closest('tr');
+      const content = row.children[1].textContent;
+      const duration = parseFloat(jsonData.find(item => item.content === content)?.duration || 0);
+
+      // Đếm số lần content này đã được dùng trong table
+      const currentCount = Array.from(tableBody.querySelectorAll('tr')).filter(tr =>
+        tr.children[1] && tr.children[1].textContent === content
+      ).length;
+
+      // Kiểm tra còn đủ duration để thêm dòng mới không
+      if ((currentCount + 1) * 5 > duration) {
+        alert('Không thể thêm nữa! Thời lượng không đủ.');
+        return; // Ngăn thêm dòng
+      }
+
+      const newRow = row.cloneNode(true);
+      newRow.querySelector('input').value = '';
+
+      const convertBtn = newRow.querySelector('.convert-to-video');
+      convertBtn.addEventListener('click', () => {
+        alert('Convert to video clicked');
+      });
+
+      const oldRemoveBtn = newRow.querySelector('.remove-row');
+      if (oldRemoveBtn) oldRemoveBtn.remove();
+
+      const removeButton = document.createElement('button');
+      removeButton.textContent = '-';
+      removeButton.className = 'remove-row px-4 py-2 bg-red-500 text-white rounded ml-2';
+
+      newRow.querySelector('td:last-child').appendChild(removeButton);
+      tableBody.appendChild(newRow);
+    }
+
+    // Khi click vào nút "-"
+    if (target.classList.contains('remove-row')) {
+      const row = target.closest('tr');
+      row.remove();
+    }
+  });
+
+  function finishMedia() {
+    const jsonData = [
+      {
+        "start": 0,
+        "duration": 4.284,
+        "audioUrl": "/audios/audio_00-00_00-10_0.mp3",
+        "src": "",
+        "content": "Let’s explore dendritic cells, the unsung heroes of your immune system!",
+        "visual": "Animation of a dendritic cell with a spotlight on it."
+      },
+      {
+        "start": 4.284,
+        "duration": 15.347667,
+        "audioUrl": "/audios/audio_00-10_00-40_0.mp3",
+        "src": "",
+        "content": "Dendritic cells, or DCs, are antigen-presenting cells. Think of them as immune system messengers.",
+        "visual": "Simple animation showing a dendritic cell engulfing an antigen."
+      }
+    ];
+    window.jsonData = jsonData; 
+
+    tableBody.innerHTML = ''; // Clear old rows
+
+    jsonData.forEach((item, index) => {
+      const id = index + 1;
+      const row = document.createElement('tr');
+
+      // ID
+      const idCell = document.createElement('td');
+      idCell.className = 'px-4 py-2';
+      idCell.textContent = id;
+
+      // Text
+      const textCell = document.createElement('td');
+      textCell.className = 'px-4 py-2';
+      textCell.textContent = item.content;
+
+      // Prompt
+      const promptCell = document.createElement('td');
+      promptCell.className = 'px-4 py-2';
+      const promptInput = document.createElement('input');
+      promptInput.type = 'text';
+      promptInput.className = 'w-full border border-gray-300 p-2 rounded';
+      promptInput.value = item.visual;
+      promptCell.appendChild(promptInput);
+
+      // Action
+      const actionCell = document.createElement('td');
+      actionCell.className = 'px-4 py-2 text-center';
+
+      const convertBtn = document.createElement('button');
+      convertBtn.className = 'convert-to-video px-4 py-2 bg-blue-500 text-white rounded';
+      convertBtn.textContent = 'Convert to Video';
+      actionCell.appendChild(convertBtn);
+
+      const addBtn = document.createElement('button');
+      addBtn.className = 'add-row px-4 py-2 bg-green-500 text-white rounded ml-2';
+      addBtn.textContent = '+';
+      actionCell.appendChild(addBtn);
+
+      row.appendChild(idCell);
+      row.appendChild(textCell);
+      row.appendChild(promptCell);
+      row.appendChild(actionCell);
+      tableBody.appendChild(row);
+    });
+  }
+  finishMedia();
 
 
   function chooseTopic(topic) {

@@ -42,7 +42,7 @@ async function generateAudioScript(engine, voiceId, script) {
           console.warn(`Engine '${engine}' not supported.`);
         }
 
-        segmentAudios.ideas.push({ text, audioPath });
+        segmentAudios.ideas.push({ text, audioPath, visual: idea.visual });
       } catch (err) {
         console.error(`Error generating audio for segment ${segment.title}, idea ${i}:`, err);
       }
