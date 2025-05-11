@@ -151,6 +151,7 @@ controller.showVideo = async (req, res) => {
       filename: video.filePath,
       topic: video.topic,
       createdAt: video.createdAt,
+      youtubeVideoId: video.youtubeVideoId,
     }));
 
     // Gửi dữ liệu về giao diện

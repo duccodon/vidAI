@@ -42,6 +42,10 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.TEXT,
         allowNull: true
       },
+      youtubeVideoId: {
+        type: DataTypes.TEXT,
+        allowNull: true
+      },
     },
     {
       sequelize,
