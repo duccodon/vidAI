@@ -25,10 +25,19 @@ export class ImageTimelineManager {
     }
 
       
+      const audioDuration = this.getAudioDuration();
       const totalEnd = start + duration;
-      if (totalEnd > this.getAudioDuration()) {
-        alert('⛔ Ảnh này vượt quá thời lượng audio. Vui lòng thu ngắn lại hoặc xóa bớt ảnh trước đó.');
-        return;
+
+      if (totalEnd > audioDuration) {
+        const original = duration;
+        duration = Math.max(0.5, audioDuration - start); // co lại nhưng không nhỏ hơn 0.5s
+
+        if (duration < 0.5) {
+          alert('⛔ Không còn đủ thời lượng audio để thêm ảnh.');
+          return;
+        }
+
+        console.warn(`⚠️ Duration vượt quá audio, đã tự co lại từ ${original.toFixed(2)}s → ${duration.toFixed(2)}s`);
       }
       const wrapper = document.createElement('div');
       wrapper.className = 'absolute top-0 h-full border rounded shadow bg-white overflow-hidden';
