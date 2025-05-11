@@ -41,70 +41,51 @@ const { execSync } = require('child_process');
 
 
 
-const convertWebmToMp3 = (inputPath, outputPath) => {
+function convertWebmToMp3(inputPath, outputPath) {
   return new Promise((resolve, reject) => {
-    if (!fs.existsSync(inputPath)) {
-      return reject(new Error('Input file not found: ' + inputPath));
-    }
-
     ffmpeg(inputPath)
-      .noVideo()
-      .audioCodec('libmp3lame')
-      .format('mp3')
-      .on('start', cmd => {
-        console.log('▶️ Start:', cmd);
-      })
-      .on('error', (err) => {
-        console.error('❌ Convert error:', err.message);
-        reject(err);
-      })
+      .output(outputPath)
       .on('end', () => {
-        console.log('✅ Converted to MP3:', outputPath);
+        console.log('Chuyển đổi thành công!');
         resolve();
       })
-      .save(outputPath);
+      .on('error', (err) => {
+        console.error('Lỗi khi chuyển đổi:', err);
+        reject(err);
+      })
+      .run();
   });
-};
+}
 
-const processJsonWebmToMp3 = async (jsonFilePath) => {
-  const raw = fs.readFileSync(jsonFilePath, 'utf-8');
-  const data = JSON.parse(raw);
-  let updated = false;
-
-  for (const item of data) {
+async function convertAllWebmToMp3(timelineData) {
+  for (const item of timelineData) {
     if (item.audioUrl && item.audioUrl.endsWith('.webm')) {
       const webmName = path.basename(item.audioUrl);
-      const webmPath = path.join(__dirname, '../public/src', webmName);
+      const mp3Name = webmName.replace(/\.webm$/, '.mp3');
 
-      if (!fs.existsSync(webmPath)) {
-        console.warn(`⚠️ File not found: ${webmName}`);
+      const inputPath = path.join(__dirname, '../public/src', webmName);
+      const outputPath = path.join(__dirname, '../public/audios', mp3Name);
+
+      if (!fs.existsSync(inputPath)) {
+        console.warn(`⚠️ Không tìm thấy file .webm: ${webmName}`);
         continue;
       }
 
-      const mp3Name = webmName.replace(/\.webm$/, '.mp3');
-      const mp3Path = path.join(__dirname, '../public/audios', mp3Name);
-
       try {
-        await convertWebmToMp3(webmPath, mp3Path);
-        fs.unlinkSync(webmPath);
-        item.audioUrl = `/audios/${mp3Name}`; // cập nhật đúng đường dẫn dùng lại
-        updated = true;
-        console.log(`✅ Converted and updated: ${webmName} → ${mp3Name}`);
+        await convertWebmToMp3(inputPath, outputPath);
+        item.audioUrl = mp3Name; // Ghi đè tên file (không có path)
+        console.log(`🔁 Đã cập nhật item.audioUrl: ${mp3Name}`);
       } catch (err) {
-        console.error(`❌ Failed to convert ${webmName}:`, err.message);
+        console.error(`❌ Không thể convert file: ${webmName}`, err.message);
       }
+    } else {
+      // Nếu đã là .mp3 thì chỉ lấy tên file
+      item.audioUrl = path.basename(item.audioUrl);
     }
   }
 
-  if (updated) {
-    fs.writeFileSync(jsonFilePath, JSON.stringify(data, null, 2), 'utf-8');
-    console.log('✅ JSON updated and saved.');
-  } else {
-    console.log('ℹ️ No changes made to JSON.');
-  }
-};
-
-
+  return timelineData;
+}
 
 async function saveVideoToDB(videoData) {
   try {
@@ -426,7 +407,8 @@ controller.videoSync = async (req, res) => {
       throw new Error('jsonPath không hợp lệ: phải là chuỗi JSON hoặc đường dẫn');
     }
 
-
+    await convertAllWebmToMp3(timelineData);
+    console.log('Dữ liệu timeline:', timelineData);
     // Rút gọn tên file cho audioUrl và src
     timelineData = timelineData.map(item => ({
       ...item,

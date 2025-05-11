@@ -1,33 +1,33 @@
 [
   {
     "start": 0,
-    "duration": 10.762333,
-    "audioUrl": "/audios/audio_00-00_00-10_0.mp3",
-    "src": "http://localhost:3000/src/image_1746961274752.png",
+    "duration": 5,
+    "audioUrl": "/audios/audio1.mp3",
+    "src": "http://localhost:3000/src/image1.jpg",
     "content": "Let's explore dendritic cells, or DCs! They're crucial players in your immune system, acting as messengers between your body's first line of defense and its more specialized immune responses.",
     "visual": "Animation of a dendritic cell \"grabbing\" an antigen and then moving towards a T cell. (Upbeat, engaging background music begins)."
   },
   {
-    "start": 10.762333,
-    "duration": 10,
-    "audioUrl": "/audios/audio_00-10_00-30_0.mp3",
-    "src": "http://localhost:3000/src/image_1746961289924.png",
+    "start": 6,
+    "duration": 5,
+    "audioUrl": "/src/recording_1746961237619.webm",
+    "src": "http://localhost:3000/src/image1.jpg",
     "content": "DCs are antigen-presenting cells. Their main job is to capture foreign substances, called antigens, process them, and then show them off on their surface to T cells.",
     "visual": "Zoom in on the dendritic cell surface showing antigens being presented. Highlight the interaction with a T cell receptor."
   },
   {
-    "start": 20.762332999999998,
-    "duration": 8,
-    "audioUrl": "/audios/audio_00-30_00-45_0.mp3",
-    "src": "http://localhost:3000/src/image_1746961310983.png",
+    "start": 12,
+    "duration": 5,
+    "audioUrl": "/audios/audio1.mp3",
+    "src": "http://localhost:3000/src/image1.jpg",
     "content": "Large peritoneal macrophages, or LPMs, are also key. Some LPMs express VSIG4 and play a protective role in infectious and oncological diseases.",
     "visual": "Depict a macrophage engulfing bacteria in the peritoneal cavity. Highlight VSIG4 on the macrophage surface."
   },
   {
-    "start": 29.662666,
+    "start": 18,
     "duration": 5,
-    "audioUrl": "/audios/audio_00-45_01-00_0.mp3",
-    "src": "http://localhost:3000/src/image_1746961345959.png",
+    "audioUrl": "/audios/audio1.mp3",
+    "src": "http://localhost:3000/src/image1.jpg",
     "content": "VSIG4 LPMs are more effective at destroying cancer cells and certain pathogens. These guys are like the special forces of your peritoneal cavity, protecting against threats.",
     "visual": "Comparison of VSIG4+ LPMs and VSIG4- LPMs, showing the VSIG4+ LPMs more actively engulfing cancer cells."
   }
