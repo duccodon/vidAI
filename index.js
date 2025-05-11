@@ -79,7 +79,11 @@ app.engine(
               } else {
                 return then.fromNow(); 
               }
-            },
+            },  
+            formatTime: (date, format) => {
+              const fmt = typeof format === 'string' ? format : 'DD/MM/YYYY, hh:mm A';
+              return moment(date).format(fmt);
+            },  
             json: (context) => JSON.stringify(context),
         },
     })
