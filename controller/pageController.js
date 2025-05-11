@@ -17,6 +17,15 @@ dotenv.config();
 
 const { generateScript, crawlWikipedia, crawlPubMed, crawlNature } = require('../utils/dataScript'); 
 const { generateAudioScript } = require('../utils/audio');
+let generateImage, generateVideo;
+
+async function importMedia() {
+  const mediaModule = await import('../utils/media.mjs');
+  generateImage = mediaModule.generateImage;
+  generateVideo = mediaModule.generateVideo;
+}
+importMedia();
+
 
 
 controller.showLogin = (req, res) => {
@@ -326,6 +335,32 @@ controller.genAudio = async (req, res) => {
   } catch (err) {
     console.error("Error generating audio:", err);
     res.status(500).json({ success: false, message: "Failed to generate audio" });
+  }
+};
+
+controller.genImage = async (req, res) => {
+  try {
+    const { prompt } = req.body;
+    console.log("Generating image with prompt:", prompt);
+    const result = await generateImage(prompt);
+    console.log("Image generated:", result + " at path:", result.path);
+    res.json({ success: true, path: result.path });
+  } catch (error) {
+    console.error('Image generation error:', error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+controller.genVideo = async (req, res) => {
+  try {
+    const { prompt } = req.body;
+    console.log("Generating video with prompt:", prompt);
+    const result = await generateVideo(prompt);
+    console.log("Video generated:", result + " at path:", result.path);
+    res.json({ success: true, path: result.path });
+  } catch (error) {
+    console.error('Video generation error:', error.message);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 

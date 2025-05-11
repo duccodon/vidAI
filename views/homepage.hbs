@@ -176,7 +176,7 @@
 
 
   <!-- Section to gen media -->
-  <div id="fourthPage" style="display: block;"
+  <div id="fourthPage" style="display: none;"
     class="fixed top-[3.8rem] sm:top-[5.4rem] left-[100px] h-[calc(100vh-5*1vh-3.8rem)] sm:h-[calc(100vh-5*1vh-7rem)] md:h-[calc(100vh-5*1vh-2rem)] w-[100%] md:w-[93%] bg-white rounded-[1rem] border border-[#ccc] overflow-y-auto overflow-x-hidden z-3">
 
     <div class="flex flex-row justify-between mx-4 my-auto gap-[3rem] py-[1rem]">
@@ -192,13 +192,8 @@
         This is final step to generate a video 
       </div>
 
-      <!-- Next button -->
-      <div class="flex items-center">
-        <div id="mediaBtn"
-          class="inline-block px-[2rem] py-[.6rem] font-medium cursor-pointer transition ease-in-out duration-300 text-sm hover:opacity-80 bg-white text-black border border-black border-solid rounded-[.7rem] mt-4">
-          Next
-        </div>
-      </div>
+      <!-- empty button -->
+      <div class="flex items-center"></div>
     </div>
 
     <!-- Media Table -->
@@ -210,26 +205,16 @@
             <th class="px-4 py-2 text-left">Text</th>
             <th class="px-4 py-2 text-left">Prompt</th>
             <th class="px-4 py-2 text-left">Action</th>
+            <th class="px-4 py-2 text-left">Result</th>
           </tr>
         </thead>
         <tbody id="mediaTableBody">
-          <tr>
-            <td class="px-4 py-2">1</td>
-            <td class="px-4 py-2">Generate video from text content</td>
-            <td class="px-4 py-2">
-              <input type="text" class="w-full border border-gray-300 p-2 rounded" placeholder="Enter AI prompt" />
-            </td>
-            <td class="px-4 py-2 text-center">
-              <button class="convert-to-video px-4 py-2 bg-blue-500 text-white rounded">Convert to Video</button>
-              <button class="add-row px-4 py-2 bg-green-500 text-white rounded">+</button>
-            </td>
-          </tr>
         </tbody>
       </table>
 
       <!-- Finish Media Button -->
       <div class="text-center mt-6">
-        <button class="px-8 py-3 bg-blue-600 text-white rounded-full text-lg">Finish Media</button>
+        <button id="finishMediaBtn" class="px-8 py-3 bg-blue-600 text-white rounded-full text-lg">Finish Media</button>
       </div>
     </div>
     
@@ -470,7 +455,7 @@
     document.getElementById("audioButton").addEventListener("click", async function () {
       const selectedTtsEngine = document.querySelector('input[name="ttsEngine"]:checked')?.value;
       const selectedVoiceModel = document.querySelector('input[name="voiceModel"]:checked')?.value;
-      const script = window.currentScript?.trim(); 
+      const script = document.getElementById("scriptDisplay").value.trim();; 
 
       if (!selectedTtsEngine) {
         alert("Please select a TTS engine.");
@@ -523,16 +508,6 @@
     
     // Handle finish audio button click
     document.getElementById("finishAudioBtn").addEventListener("click", async function () {
-      /*const finalJson = await generateFinalJson();
-      console.log("Final JSON:", JSON.stringify(finalJson, null, 2));
-      const allHaveAudio = finalJson.every(item => item.audioUrl && item.audioUrl.trim() !== "");
-
-      if (!allHaveAudio) {
-        alert("Please generate audio files fully before proceeding.");
-        return;
-      }
-
-      document.getElementById("fourthPage").style.display = "block";*/
       alert("Please generate audio files fully before proceeding."); 
     });  
   });
@@ -723,6 +698,8 @@
       }
 
       document.getElementById("fourthPage").style.display = "block";
+      window.jsonData = finalJson; 
+      finishMedia();
     });  
   }
   // Save every data except image/vid to JSON
@@ -779,92 +756,188 @@
 
   // fourth page
   const tableBody = document.getElementById('mediaTableBody');
+  const resultTableBody = document.getElementById('resultTableBody');
+
   tableBody.addEventListener('click', function (event) {
     const target = event.target;
-    const jsonData = window.jsonData || []; 
+    const jsonData = window.jsonData || [];
 
-    // Khi click vào nút "+"
+    // click "+"
     if (target.classList.contains('add-row')) {
-      console.log("Add row clicked");
       const row = target.closest('tr');
       const content = row.children[1].textContent;
       const duration = parseFloat(jsonData.find(item => item.content === content)?.duration || 0);
 
-      // Đếm số lần content này đã được dùng trong table
       const currentCount = Array.from(tableBody.querySelectorAll('tr')).filter(tr =>
         tr.children[1] && tr.children[1].textContent === content
       ).length;
 
-      // Kiểm tra còn đủ duration để thêm dòng mới không
       if ((currentCount + 1) * 5 > duration) {
-        alert('Không thể thêm nữa! Thời lượng không đủ.');
-        return; // Ngăn thêm dòng
+        alert('Cannot add more rows for this content. The duration is limited.');
+        return;
       }
 
+      // Clone hàng và loại bỏ các phần không cần (img, nút convert nếu có)
       const newRow = row.cloneNode(true);
-      newRow.querySelector('input').value = '';
+      
+      // Reset input
+      const input = newRow.querySelector('input');
+      if (input) input.value = '';
 
-      const convertBtn = newRow.querySelector('.convert-to-video');
-      convertBtn.addEventListener('click', () => {
-        alert('Convert to video clicked');
-      });
+      // Xoá ảnh kết quả nếu có
+      const img = newRow.querySelector('img');
+      if (img) img.remove();
 
+      // Xoá nút "Convert to Image/Video"
+      const convertBtn = newRow.querySelector('.convert-to-video, .convert-to-image');
+      if (convertBtn) convertBtn.remove();
+
+      // Xoá nút "-" cũ nếu có
       const oldRemoveBtn = newRow.querySelector('.remove-row');
       if (oldRemoveBtn) oldRemoveBtn.remove();
 
+      // Thêm nút "-"
       const removeButton = document.createElement('button');
       removeButton.textContent = '-';
       removeButton.className = 'remove-row px-4 py-2 bg-red-500 text-white rounded ml-2';
+      newRow.querySelector('td:nth-child(4)').appendChild(removeButton);
 
-      newRow.querySelector('td:last-child').appendChild(removeButton);
       tableBody.appendChild(newRow);
     }
 
-    // Khi click vào nút "-"
+    // click "-"
     if (target.classList.contains('remove-row')) {
-      const row = target.closest('tr');
-      row.remove();
+      target.closest('tr').remove();
     }
+
+    // handle "Convert to Video"
+    if (target.classList.contains('convert-to-video')) {
+      const row = target.closest('tr');
+      const content = row.children[1].textContent;
+
+      // Xoá tất cả dòng có cùng content
+      Array.from(tableBody.querySelectorAll('tr')).forEach(tr => {
+        if (tr.children[1] && tr.children[1].textContent === content && tr !== row) {
+          tr.remove();
+        }
+      });
+
+      // Xoá nút "+"
+      const addBtn = row.querySelector('.add-row'), 
+            removeBtn = row.querySelector('.remove-row');
+      if (addBtn) addBtn.remove();
+      if (removeBtn) removeBtn.remove();
+
+      // Đổi text nút
+      target.textContent = 'Convert to Image';
+      target.classList.remove('convert-to-video');
+      target.classList.add('convert-to-image');
+      target.classList.remove('bg-blue-500');
+      target.classList.add('bg-yellow-500');
+
+    } else if (target.classList.contains('convert-to-image')) {
+      const row = target.closest('tr');
+      const content = row.children[1].textContent;
+
+      // add "+"
+      const addBtn = document.createElement('button');
+      addBtn.textContent = '+';
+      addBtn.className = 'add-row px-4 py-2 bg-green-500 text-white rounded ml-2';
+
+      const lastTd = row.querySelector('td:nth-child(4)');
+      if (lastTd) lastTd.appendChild(addBtn);
+
+      target.textContent = 'Convert to Video';
+      target.classList.remove('convert-to-image');
+      target.classList.add('convert-to-video');
+      target.classList.remove('bg-yellow-500');
+      target.classList.add('bg-blue-500');
+
+      // Lấy ảnh thật từ cột "Result"
+      const img = row.querySelector('td:last-child img');
+      const imgSrc = img ? img.src : 'https://placehold.co/100x60?text=Image';
+
+      const resultTableBody = document.querySelector('#result-table tbody');
+      if (resultTableBody) {
+        const resultRow = document.createElement('tr');
+        resultRow.innerHTML = `
+          <td class="px-4 py-2">Image</td>
+          <td class="px-4 py-2">${content}</td>
+          <td class="px-4 py-2"><img src="${imgSrc}" alt="image-preview" class="w-24 h-auto rounded"/></td>
+        `;
+        resultTableBody.appendChild(resultRow);
+      }
+    }
+
+
+    // Khi click "Generate"
+    if (target.classList.contains('generate-result')) {
+      const row = target.closest('tr');
+      const content = row.children[1].textContent;
+      const prompt = row.querySelector('input').value;
+
+      if (!prompt) {
+        alert( `Please enter a prompt for ${content}`);
+        return;
+      }
+
+      // Kiểm tra trạng thái dòng hiện tại
+      const convertBtn = row.querySelector('.convert-to-image, .convert-to-video');
+
+      let apiUrl = '';
+      if (convertBtn && convertBtn.classList.contains('convert-to-image')) {
+        apiUrl = '/Homepage/api/generate-video';
+      } else {
+        apiUrl = '/Homepage/api/generate-image';
+      }
+
+      // Fetch dữ liệu
+      fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ prompt })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (!data.success || !data.path) {
+          alert('Không nhận được kết quả từ server!');
+          return;
+        }
+
+        const resultCell = row.querySelector('td:nth-child(5)');
+        resultCell.replaceChildren(); 
+
+        if (apiUrl.includes('video')) {
+          resultCell.innerHTML = `<video controls width="150"><source src="${data.path}" type="video/mp4"></video>`;
+        } else {
+          resultCell.innerHTML = `<img src="${data.path}" class="w-[150px] h-auto rounded" />`;
+        }
+      })
+      .catch(err => {
+        console.error('Error fetching result:', err);
+        alert('Error calling API!');
+      });
+    }     
   });
 
   function finishMedia() {
-    const jsonData = [
-      {
-        "start": 0,
-        "duration": 4.284,
-        "audioUrl": "/audios/audio_00-00_00-10_0.mp3",
-        "src": "",
-        "content": "Let’s explore dendritic cells, the unsung heroes of your immune system!",
-        "visual": "Animation of a dendritic cell with a spotlight on it."
-      },
-      {
-        "start": 4.284,
-        "duration": 15.347667,
-        "audioUrl": "/audios/audio_00-10_00-40_0.mp3",
-        "src": "",
-        "content": "Dendritic cells, or DCs, are antigen-presenting cells. Think of them as immune system messengers.",
-        "visual": "Simple animation showing a dendritic cell engulfing an antigen."
-      }
-    ];
-    window.jsonData = jsonData; 
-
-    tableBody.innerHTML = ''; // Clear old rows
+    const jsonData = window.jsonData;
+    tableBody.innerHTML = '';
 
     jsonData.forEach((item, index) => {
       const id = index + 1;
       const row = document.createElement('tr');
 
-      // ID
       const idCell = document.createElement('td');
       idCell.className = 'px-4 py-2';
       idCell.textContent = id;
 
-      // Text
       const textCell = document.createElement('td');
       textCell.className = 'px-4 py-2';
       textCell.textContent = item.content;
 
-      // Prompt
       const promptCell = document.createElement('td');
       promptCell.className = 'px-4 py-2';
       const promptInput = document.createElement('input');
@@ -873,28 +946,82 @@
       promptInput.value = item.visual;
       promptCell.appendChild(promptInput);
 
-      // Action
       const actionCell = document.createElement('td');
       actionCell.className = 'px-4 py-2 text-center';
 
       const convertBtn = document.createElement('button');
       convertBtn.className = 'convert-to-video px-4 py-2 bg-blue-500 text-white rounded';
       convertBtn.textContent = 'Convert to Video';
-      actionCell.appendChild(convertBtn);
 
       const addBtn = document.createElement('button');
       addBtn.className = 'add-row px-4 py-2 bg-green-500 text-white rounded ml-2';
       addBtn.textContent = '+';
+
+      const generateBtn = document.createElement('button');
+      generateBtn.className = 'generate-result px-4 py-2 bg-purple-500 text-white rounded ml-2';
+      generateBtn.textContent = 'Generate';
+
+      actionCell.appendChild(convertBtn);
+      actionCell.appendChild(generateBtn);
       actionCell.appendChild(addBtn);
+
+      const resultCell = document.createElement('td');
+      resultCell.className = 'px-4 py-2 text-center';
+
+      if (item.src) {
+        const img = document.createElement('img');
+        img.src = item.src;
+        img.alt = `Image ${id}`;
+        img.className = 'w-32 h-auto rounded mx-auto';
+        resultCell.appendChild(img);
+      }
 
       row.appendChild(idCell);
       row.appendChild(textCell);
       row.appendChild(promptCell);
       row.appendChild(actionCell);
+      row.appendChild(resultCell);
       tableBody.appendChild(row);
     });
   }
-  finishMedia();
+
+  document.getElementById('finishMediaBtn').addEventListener('click', () => {
+    const rows = document.querySelectorAll('#mediaTableBody tr');
+    console.log('Rows:', rows);
+
+    rows.forEach(row => {
+      const content = row.children[1].textContent.trim();
+      const mediaCell = row.children[4];
+
+      let src = '';
+      const img = mediaCell.querySelector('img');
+      const video = mediaCell.querySelector('video > source');
+
+      if (img) {
+        src = img.src;
+      } else if (video) {
+        src = video.src;
+      }
+
+      if (!src) return; 
+
+      const item = window.jsonData.find(item => item.content === content);
+      if (item) {
+        item.src = src;
+      }
+    });
+
+    // every item must have src
+    const missing = window.jsonData.filter(item => !item.src);
+    if (missing.length > 0) {
+      alert(`Missing ${missing.length} media! Please check again.`);
+      console.warn('Missing item:', missing);
+      return;
+    }
+
+    console.log('✅ Tất cả src đã đầy đủ:', window.jsonData);
+  });
+
 
 
   function chooseTopic(topic) {
