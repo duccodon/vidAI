@@ -13,6 +13,7 @@
   "description": "Welcome to the **vidAI** project!  \r This repository contains the codebase for a web application that allows users to input a topic and automatically generate a video, including script writing, text-to-speech audio, and relevant images. Users can then combine and edit these materials into a final video ready for YouTube publishing.",
   "dependencies": {
     "@aws-sdk/client-polly": "^3.804.0",
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@google-cloud/text-to-speech": "^6.0.1",
     "@google/generative-ai": "^0.24.1",

@@ -38,8 +38,10 @@ async function generateAudioScript(engine, voiceId, script) {
           await generateElevenLabsAudio(text, voiceId, outputFile);
         } else if (engine === "amazonpolly") {
           await generateAmazonPollyAudio(text, voiceId, outputFile);
+        } else if (engine === "gtts") {
+          await generateGTTSAudio(text, voiceId, outputFile);
         } else {
-          console.warn(`Engine '${engine}' not supported.`);
+          console.err(`Engine '${engine}' not supported, ${voiceId}.`);
         }
 
         segmentAudios.ideas.push({ text, audioPath, visual: idea.visual });
@@ -185,21 +187,20 @@ async function generateAmazonPollyAudio(text, voiceId, outputFile) {
 
 
 //gtts dung tieng viet va tieng anh nhung khong co nhieu giong noi
-// const text = 'Chào bạn, đây là video khoa học tự động!';
+async function generateGTTSAudio(text, voiceId, outputFile) {
+  return new Promise((resolve, reject) => {
+    const gtts = new gTTS(text, voiceId);
 
-// // Chọn ngôn ngữ (ví dụ: 'vi' cho tiếng Việt)
-// const language = 'vi';
+    gtts.save(outputFile, function (err, result) {
+      if (err) {
+        console.error("gTTS error:", err.message);
+        return reject(err);
+      }
 
-// // Tạo đối tượng gTTS
-// const gtts = new gTTS(text, language);
-
-// // Lưu file âm thanh
-// gtts.save('output.mp3', (err, result) => {
-//   if (err) {
-//     console.log('Có lỗi khi tạo file âm thanh:', err);
-//   } else {
-//     console.log('Đã tạo file âm thanh thành công: output.mp3');
-//   }
-// });
+      console.log("Audio saved as", outputFile);
+      resolve();
+    });
+  });
+}
 
 module.exports = { generateAudioScript, parseScriptWithIdeas, extractIdeas };
