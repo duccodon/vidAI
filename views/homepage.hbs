@@ -1026,5 +1026,12 @@
 
   function chooseTopic(topic) {
     console.log("Topic chosen:", topic);
-  }
+    // Lấy textarea có id="insertTopic"
+    const topicInput = document.getElementById("insertTopic");
+    // Điền topic vào textarea
+    topicInput.value = topic;
+    // Tùy chọn: Tự động điều chỉnh chiều cao của textarea
+    topicInput.style.height = '';
+    topicInput.style.height = topicInput.scrollHeight + 'px';
+}
 </script>
