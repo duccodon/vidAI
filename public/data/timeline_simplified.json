@@ -1,0 +1,34 @@
+[
+  {
+    "start": 0,
+    "duration": 6,
+    "audioUrl": "audio_00-00_00-15_0.mp3",
+    "src": "image_1746971571215.png",
+    "content": "Let's explore the amazing world of Physics! Physics is the science that studies matter, its movement, energy, and forces.",
+    "visual": "A dynamic montage showing various physics concepts, like planets orbiting, a bouncing ball, light passing through a prism, ending on the text \"Physics: Exploring the Universe\"."
+  },
+  {
+    "start": 6,
+    "duration": 6,
+    "audioUrl": "audio_00-15_00-30_0.mp3",
+    "src": "image_1746971574446.png",
+    "content": "Physicists are the scientists trying to understand the universe in its most fundamental level, what are the rules and behaviors of the nature.",
+    "visual": "Show images of physicists doing research and experimentation in laboratory."
+  },
+  {
+    "start": 12,
+    "duration": 9.900333,
+    "audioUrl": "audio_00-30_00-45_0.mp3",
+    "src": "image_1746971571013.png",
+    "content": "Physics goes beyond mechanics. For example, Scientists are using physics to create light! Like these BaCd(BO) phosphors, they convert energy into light.",
+    "visual": "Show an animation of light emitting from a phosphor material being hit by light, show chemical structures, and show yellow and green light being emitted."
+  },
+  {
+    "start": 21.900333,
+    "duration": 10.031,
+    "audioUrl": "audio_00-45_01-00_0.mp3",
+    "src": "image_1746971571650.png",
+    "content": "By doping these phosphors with elements like Dy and Tb, Scientists can achieve vibrant yellow and green light, for application in new display technologies.",
+    "visual": "Show how phosphors can be used in LED light."
+  }
+]

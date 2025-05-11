@@ -169,6 +169,7 @@
       </div>
     </div>
   </div>
+</div>
 
     <script>
         const imageForm = document.getElementById('imageForm');
@@ -200,6 +201,13 @@
             scale.innerHTML = '';
             const playhead = scale === imageScale ? imagePlayhead : audioPlayhead;
             scale.appendChild(playhead);
+
+            const waveformWidth = waveform.scrollWidth;
+            const pps = waveformWidth / duration;
+
+            imageScale.style.width = `${waveformWidth}px`;
+            audioScale.style.width = `${waveformWidth}px`;
+            imageTimeline.style.width = `${waveformWidth}px`; // rất quan trọng!
 
             // Tạo tick cho mỗi step (0, 5, 10, ..., gần cuối)
             let t = 0;
@@ -265,14 +273,17 @@
 
         wavesurfer.on('ready', () => {
         const duration = wavesurfer.getDuration();
-        updateTimelineMarks(duration);
+        setTimeout(() => {
+          updateTimelineMarks(duration);
+        }, 200); // 50–100ms thường đủ
+
 
         if (metadata && Array.isArray(metadata.timeline)) {
           metadata.timeline.forEach(item => {
             const { src, start, duration } = item;
             const isVideo = src.endsWith('.mp4') || src.endsWith('.mov');
             // Tạo đường dẫn đầy đủ cho src
-            const fullSrc = `/img/assets/${src}`; // Đường dẫn đầy đủ, thay đổi nếu cần
+            const fullSrc = `/src/${src}`; // Đường dẫn đầy đủ, thay đổi nếu cần
             if (item.content && item.content.trim() !== '') {
               fullContent += item.content.trim() + ' ';
             }
@@ -327,8 +338,11 @@
         });
 
 
-
-        wavesurfer.load('/img/assets/audio1.mp3'); //LOAD AUDIO FILE 
+        //Đảm bảo audio được load lên wavesurfer và audio được gửi đi là giống nhau
+        wavesurfer.load(metadata.audioUrl); //THAY BẰNG MERGE AUDIO CỦA BẠN
+        //wavesurfer.audioUrl = '/img/assets/audio1.mp3'; // Đường dẫn đến file âm thanh
+        wavesurfer.audioUrl = metadata.audioUrl; // UNCOMMENT nếu THỰC SỰ CÓ FILE ÂM THANH TRONG JSON
+        console.log("Audio URL:", wavesurfer.audioUrl);
         wavesurfer.setVolume(1.0); // 100% volume
 
 
@@ -344,7 +358,7 @@
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 timeline: imageManager.getAllImages(),
-                audioUrl: metadata.audioUrl,
+                audioUrl: wavesurfer.audioUrl,
                 audioDuration: wavesurfer.getDuration(),
                 volume: parseInt(volumeRange.value) / 100
               })
@@ -390,7 +404,7 @@
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 timeline: imageManager.getAllImages(), // bạn cần đảm bảo gồm start, duration, src
-                audioUrl: metadata.audioUrl,
+                audioUrl: wavesurfer.audioUrl,
                 audioDuration: wavesurfer.getDuration(),
                 volume: parseInt(volumeRange.value) / 100,
                 resolution: resolutionSelect.value,
@@ -446,7 +460,7 @@
           wrapper.className = 'relative';
 
           const thumb = document.createElement(isVideo ? 'video' : 'img');
-          const realPath = `/img/assets/${filename}`; //Đuờng dẫn đầy đủ, thay đổi nếu cần
+          const realPath = `/src/${filename}`; //Đuờng dẫn đầy đủ, thay đổi nếu cần
           thumb.src = realPath;
 
           if (isVideo) {
@@ -499,7 +513,7 @@
           imageForm.appendChild(wrapper);
         });
 
-        console.log("📦 Audio URLs:", metadata.audioUrl); //LOAD VÀO WAVESURFER KHI ĐÃ HOÀN TẤT
+
 
         
 

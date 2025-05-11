@@ -15,14 +15,15 @@ export class ImageTimelineManager {
       if (start === undefined) {
         start = this.getNextAvailableStart();
       }
-      if (duration === undefined) {
-        const remaining = this.getAudioDuration() - start;
-        if (remaining <= 1) {
-          alert('⛔ Không còn đủ thời gian để thêm ảnh.');
-          return;
-        }
-        duration = Math.min(5, remaining);
+    if (duration === undefined) {
+      const remaining = this.getAudioDuration() - start;
+      if (remaining <= 0.5) {
+        alert('⛔ Thời lượng còn lại quá ngắn.');
+        return;
       }
+      duration = Math.min(remaining, 2); // Mặc định 2s nếu không truyền
+    }
+
       
       const totalEnd = start + duration;
       if (totalEnd > this.getAudioDuration()) {

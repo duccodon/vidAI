@@ -265,6 +265,11 @@
       <div class="flex justify-center mt-2 text-[15px] font-medium text-black truncate">War</div>
     </div>
   </div>
+<form id="videoSyncForm" action="/Video/video-sync" method="POST">
+  <input type="hidden" name="topic" id="topicInput">
+  <input type="hidden" name="jsonPath" id="jsonPathInput">
+  <button type="submit" style="display: none;">Gửi</button>
+</form>
 
 
 </div>
@@ -1020,9 +1025,13 @@
     }
 
     console.log('✅ Tất cả src đã đầy đủ:', window.jsonData);
+      // Gửi trực tiếp tới server
+  const form = document.getElementById('videoSyncForm');
+  document.getElementById('topicInput').value = window.currentTopic;
+  document.getElementById('jsonPathInput').value = JSON.stringify(window.jsonData);
+
+  form.submit(); // ✅ Điều hướng thật đến /Video/video-sync
   });
-
-
 
   function chooseTopic(topic) {
     console.log("Topic chosen:", topic);

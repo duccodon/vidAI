@@ -35,6 +35,77 @@ const categoryIds = {
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath);
+
+
+const { execSync } = require('child_process');
+
+
+
+const convertWebmToMp3 = (inputPath, outputPath) => {
+  return new Promise((resolve, reject) => {
+    if (!fs.existsSync(inputPath)) {
+      return reject(new Error('Input file not found: ' + inputPath));
+    }
+
+    ffmpeg(inputPath)
+      .noVideo()
+      .audioCodec('libmp3lame')
+      .format('mp3')
+      .on('start', cmd => {
+        console.log('▶️ Start:', cmd);
+      })
+      .on('error', (err) => {
+        console.error('❌ Convert error:', err.message);
+        reject(err);
+      })
+      .on('end', () => {
+        console.log('✅ Converted to MP3:', outputPath);
+        resolve();
+      })
+      .save(outputPath);
+  });
+};
+
+const processJsonWebmToMp3 = async (jsonFilePath) => {
+  const raw = fs.readFileSync(jsonFilePath, 'utf-8');
+  const data = JSON.parse(raw);
+  let updated = false;
+
+  for (const item of data) {
+    if (item.audioUrl && item.audioUrl.endsWith('.webm')) {
+      const webmName = path.basename(item.audioUrl);
+      const webmPath = path.join(__dirname, '../public/src', webmName);
+
+      if (!fs.existsSync(webmPath)) {
+        console.warn(`⚠️ File not found: ${webmName}`);
+        continue;
+      }
+
+      const mp3Name = webmName.replace(/\.webm$/, '.mp3');
+      const mp3Path = path.join(__dirname, '../public/audios', mp3Name);
+
+      try {
+        await convertWebmToMp3(webmPath, mp3Path);
+        fs.unlinkSync(webmPath);
+        item.audioUrl = `/audios/${mp3Name}`; // cập nhật đúng đường dẫn dùng lại
+        updated = true;
+        console.log(`✅ Converted and updated: ${webmName} → ${mp3Name}`);
+      } catch (err) {
+        console.error(`❌ Failed to convert ${webmName}:`, err.message);
+      }
+    }
+  }
+
+  if (updated) {
+    fs.writeFileSync(jsonFilePath, JSON.stringify(data, null, 2), 'utf-8');
+    console.log('✅ JSON updated and saved.');
+  } else {
+    console.log('ℹ️ No changes made to JSON.');
+  }
+};
+
+
+
 async function saveVideoToDB(videoData) {
   try {
     const video = await Video.create({
@@ -54,8 +125,6 @@ async function saveVideoToDB(videoData) {
     throw err;
   }
 }
-
-
 
 const uploadVideo = async (videoPath, metadata = {}, userId = null) => {
   if (!fs.existsSync(videoPath)) {
@@ -84,133 +153,130 @@ const uploadVideo = async (videoPath, metadata = {}, userId = null) => {
 };
 
 controller.exportVideo = async (req, res) => {
-  const { timeline, audioUrl, audioDuration, volume = 1.0, resolution = '720p', title, description, content, topic} = req.body;
-      if (!Array.isArray(timeline) || !audioUrl || !audioDuration) {
-          return res.status(400).json({ error: 'Missing timeline, audioUrl or audioDuration' });
+  const { timeline, audioUrl, audioDuration, volume = 1.0, resolution = '720p', title, description, content, topic } = req.body;
+
+  if (!Array.isArray(timeline) || !audioUrl || !audioDuration) {
+    return res.status(400).json({ error: 'Missing timeline, audioUrl or audioDuration' });
+  }
+
+  const normalizePath = (url) => {
+    try {
+      return new URL(url).pathname;
+    } catch {
+      return url;
+    }
+  };
+
+  const resolutions = {
+    '360p': '640:360',
+    '720p': '1280:720',
+    '1080p': '1920:1080'
+  };
+  const scaleOption = resolutions[resolution] || resolutions['720p'];
+  const publicDir = path.join(__dirname, '../public');
+  const blackImage = '/img/assets/black.jpg';
+
+
+  const fullTimeline = [];
+  let prevEnd = 0;
+
+  for (const item of timeline) {
+    const gap = item.start - prevEnd;
+    if (gap >= 0.05) {
+      fullTimeline.push({ src: blackImage, start: prevEnd, duration: gap });
+      console.log('add black frame:', prevEnd, gap);
+    }
+    fullTimeline.push(item);
+    prevEnd = item.start + item.duration;
+  }
+
+  const remaining = audioDuration - prevEnd;
+  if (remaining >= 0.05) {
+    fullTimeline.push({ src: blackImage, start: prevEnd, duration: remaining });
+  }
+
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'export-'));
+  const videoListPath = path.join(tempDir, 'input.txt');
+  const videoPaths = [];
+
+for (let i = 0; i < fullTimeline.length; i++) {
+  const { src, duration, isVideo } = fullTimeline[i];
+  const inputPath = path.join(publicDir, normalizePath(src));
+  const outVideo = path.join(tempDir, `clip${i}.mp4`);
+
+  await new Promise((resolve, reject) => {
+    const ff = ffmpeg().input(inputPath);
+
+    let fadeFilters = [
+      `scale=${scaleOption}:force_original_aspect_ratio=decrease`,
+      `pad=${scaleOption}:(ow-iw)/2:(oh-ih)/2:color=black`
+    ];
+
+    if (duration >= 2) {
+      fadeFilters.push(`fade=in:st=0:d=0.5`);
+      fadeFilters.push(`fade=out:st=${duration - 0.5}:d=0.5`);
+    }
+
+    const filterString = fadeFilters.join(',');
+
+    const outputOpts = [
+      `-vf ${filterString}`,
+      '-preset ultrafast',
+      '-b:v 1000k',
+      '-r 25',
+      '-pix_fmt yuv420p',
+      `-t ${Math.max(0.05, Math.round(duration * 100) / 100)}`,
+      '-y'
+    ];
+
+    if (isVideo) {
+      ff.inputOptions(['-stream_loop 500']);
+    } else {
+      ff.inputOptions('-loop 1');
+    }
+
+    ff.outputOptions(outputOpts)
+      .videoCodec('libx264')
+      .save(outVideo)
+      .on('end', resolve)
+      .on('error', reject);
+  });
+
+  videoPaths.push(outVideo);
+}
+
+  const concatList = videoPaths.map(p => `file '${p.replace(/\\/g, '/')}'`).join('\n');
+  fs.writeFileSync(videoListPath, concatList);
+
+  // Step 2: Create main video with audio
+  const mainVideoWithAudio = path.join(publicDir, 'exported', `main_${Date.now()}.mp4`);
+  const audioPath = path.join(publicDir, normalizePath(audioUrl));
+  const exportCmd = `"${ffmpegPath}" -f concat -safe 0 -i "${videoListPath}" -i "${audioPath}" -filter:a "volume=${volume}" -c:v copy -c:a aac -shortest -y "${mainVideoWithAudio}"`;
+
+  console.log('▶️ Running export:', exportCmd);
+  exec(exportCmd, async (err, stdout, stderr) => {
+    if (err) {
+      console.error('❌ Export failed:', stderr);
+      return res.status(500).send('Export failed');
+    }
+
+    // Step 3: upload main video to Cloudinary
+      try {
+        const result = await uploadVideo(mainVideoWithAudio, { title, topic, description, content }, req.session.userId);
+        // Clean up
+        fs.unlinkSync(mainVideoWithAudio);
+        fs.unlinkSync(audioPath);
+        fs.rmSync(tempDir, { recursive: true, force: true });
+
+        res.json({ success: true, url: result.secure_url, redirect: '/Video' });
+      } catch (uploadError) {
+        console.error('❌ Upload failed:', uploadError);
+        res.status(500).send('Upload failed');
       }
-  
-      console.log('Timeline:', timeline);
-      console.log('Audio URL:', audioUrl);
-      console.log('Audio Duration:', audioDuration);
-      console.log('Resolution:', resolution);
-      console.log('Volume:', volume);
-      console.log('Title:', title);
-      console.log('Description:', description);
-      console.log('Content:', content);
-      const normalizePath = (url) => {
-          try {
-          return new URL(url).pathname;
-          } catch {
-          return url;
-          }
-      };
-  
-      const resolutions = {
-          '360p': '640:360',
-          '720p': '1280:720',
-          '1080p': '1920:1080'
-      };
-      const scaleOption = resolutions[resolution] || resolutions['720p'];
-      const publicDir = path.join(__dirname, '../public');
-      const blackImage = '/img/assets/black.jpg';
-      const fullTimeline = [];
-  
-      let prevEnd = 0;
-      for (const item of timeline) {
-          const gap = item.start - prevEnd;
-          if (gap >= 0.05) {
-          fullTimeline.push({ src: blackImage, start: prevEnd, duration: gap });
-          }
-          fullTimeline.push(item);
-          prevEnd = item.start + item.duration;
-      }
-  
-      const remaining = audioDuration - prevEnd;
-      if (remaining >= 0.05) {
-          fullTimeline.push({ src: blackImage, start: prevEnd, duration: remaining });
-      }
-  
-      const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'export-'));
-      const videoListPath = path.join(tempDir, 'input.txt');
-      const videoPaths = [];
-  
-      for (let i = 0; i < fullTimeline.length; i++) {
-        const { src, duration, isVideo } = fullTimeline[i];
-        const inputPath = path.join(publicDir, normalizePath(src));
-        const outVideo = path.join(tempDir, `clip${i}.mp4`);
-      
-        await new Promise((resolve, reject) => {
-          const ff = ffmpeg().input(inputPath);
-      
-          if (isVideo) {
-            ff.inputOptions([`-stream_loop 500`])
-              .outputOptions([
-                `-t ${Math.max(0.05, Math.round(duration * 100) / 100)}`,
-                `-vf scale=${scaleOption}:force_original_aspect_ratio=decrease,pad=${scaleOption}:(ow-iw)/2:(oh-ih)/2:color=black`,
-                '-preset ultrafast',
-                '-b:v 1000k',
-                '-r 25',
-                '-pix_fmt yuv420p',
-                '-y'
-              ])
-              .videoCodec('libx264')
-              .save(outVideo)
-              .on('end', resolve)
-              .on('error', reject);
-          } else {
-            ff
-              .inputOptions('-loop 1')
-              .outputOptions([
-                `-vf scale=${scaleOption}:force_original_aspect_ratio=decrease,pad=${scaleOption}:(ow-iw)/2:(oh-ih)/2:color=black`,
-                '-preset ultrafast',
-                '-b:v 1000k',
-                '-r 25',
-                '-pix_fmt yuv420p',
-                `-t ${Math.max(0.05, Math.round(duration * 100) / 100)}`,
-                '-y'
-              ])
-              .videoCodec('libx264')
-              .save(outVideo)
-              .on('end', resolve)
-              .on('error', reject);
-          }
-        });
-      
-        videoPaths.push(outVideo);
-      }      
-  
-      const concatList = videoPaths.map(p => `file '${p.replace(/\\/g, '/')}'`).join('\n');
-      fs.writeFileSync(videoListPath, concatList);
-  
-      const outputPath = path.join(publicDir, 'exported', `video_${Date.now()}.mp4`);
-      const audioPath = path.join(publicDir, normalizePath(audioUrl));
-  
-      const cmd = `"${ffmpegPath}" -f concat -safe 0 -i "${videoListPath}" -i "${audioPath}" -filter:a "volume=${volume}" -c:v copy -c:a aac -shortest -y "${outputPath}"`;
-      console.log('Running export command:', cmd);
-      exec(cmd, async (err, stdout, stderr) => {
-          if (err) {
-            console.error('❌ FFmpeg export error:', stderr);
-            return res.status(500).send('Export failed');
-          }
-      
-          try {
-            const result = await uploadVideo(outputPath, { title, topic, description, content}, req.session.userId);
-      
-            // Xoá file sau khi upload thành công
-            fs.unlinkSync(outputPath, (err) => {
-              if (err) console.warn('⚠️ Không thể xóa file sau upload:', err.message);
-              else console.log('🧹 File đã được xóa sau khi upload:', outputPath);
-            });
-      
-            res.json({ success: true, url: result.secure_url, redirect: '/Video' });
-          } catch (uploadError) {
-            console.error('❌ Upload error:', uploadError);
-            res.status(500).send('Upload failed');
-          } finally {
-            fs.rmSync(tempDir, { recursive: true, force: true });
-          }
-        });
+
+  });
 };
+
 
 controller.renderVideo = async (req, res) => {
   const { timeline, audioUrl, audioDuration, volume = 1.0 } = req.body;
@@ -225,7 +291,8 @@ controller.renderVideo = async (req, res) => {
           return url;
         }
       };
-    
+      
+
       const publicDir = path.join(__dirname, '../public');
       const blackImage = '/img/assets/black.jpg';
       
@@ -326,27 +393,60 @@ const { content } = require("googleapis/build/src/apis/content");
 
 controller.videoSync = async (req, res) => {
   const {topic, jsonPath} = req.body;
-  
-  console.log('Topic:', topic);
-  console.log('JSON Path:', jsonPath);
+
+  // // Bước 1: Ghi đè audioUrl và src
+
+  // console.log('Topic:', topic);
+  // console.log('JSON Path:', jsonPath);
+  // console.log('Đường dẫn JSON:', path.join(__dirname, '../public', jsonPath));
+   const getFileName = (value) => {
+    if (!value) return value;
+    try {
+      const url = new URL(value, 'http://localhost'); // fallback cho relative path
+      return path.basename(url.pathname);
+    } catch {
+      return path.basename(value);
+    }
+  };
 
   let timelineData = [];
   try {
-    const absolutePath = path.join(__dirname, '../public', jsonPath);
-    console.log('Đọc file JSON:', absolutePath);
-    const raw = fs.readFileSync(absolutePath, 'utf-8');
-    timelineData = JSON.parse(raw);
+    if (typeof jsonPath === 'string' && (jsonPath.trim().startsWith('[') || jsonPath.trim().startsWith('{'))) {
+      // ✅ Trường hợp là chuỗi JSON stringify
+      console.log('📄 Nhận JSON dạng chuỗi từ body');
+      timelineData = JSON.parse(jsonPath);
+    } else if (typeof jsonPath === 'string') {
+      // ✅ Trường hợp là đường dẫn đến file
+      const absolutePath = path.join(__dirname, '../public', jsonPath);
+      console.log('📁 Đọc JSON từ file:', absolutePath);
+
+      const raw = fs.readFileSync(absolutePath, 'utf-8');
+      timelineData = JSON.parse(raw);
+    } else {
+      throw new Error('jsonPath không hợp lệ: phải là chuỗi JSON hoặc đường dẫn');
+    }
+
+
+    // Rút gọn tên file cho audioUrl và src
+    timelineData = timelineData.map(item => ({
+      ...item,
+      audioUrl: getFileName(item.audioUrl),
+      src: getFileName(item.src)
+    }));
   } catch (e) {
-    console.warn('⚠ Không đọc được JSON từ', jsonPath, ':', e.message);
+    console.warn('⚠ Không đọc được JSON:', e.message);
+    return res.status(400).json({ error: 'Dữ liệu JSON không hợp lệ' });
   }
 
   // Lấy danh sách các audioUrl từ timeline
   const audioUrls = timelineData.map(item => item.audioUrl);
   const audioPaths = audioUrls.map(url => path.join(__dirname, '../public', 'audios', url));
 
+  console.log('Danh sách audioUrls:', audioUrls);
+  console.log('Danh sách audioPaths:', audioPaths);
   // Kiểm tra nếu chỉ có audio, không có video
   if (audioUrls.length > 0) {
-    const outputAudioPath = path.join(__dirname, '../public/audios', `merged_audio_${Date.now()}.mp3`);
+    const outputAudioPath = path.join(__dirname, '../public/audios', `merged_audio_${Date.now()}.mp3`); //THAY ĐỔI ĐƯỜNG DẪN NẾU CẦN
     const cmd = `"${ffmpegPath}" -i "concat:${audioPaths.join('|')}" -c:a libmp3lame -b:a 192k -y "${outputAudioPath}"`;
 
     console.log('Running command:', cmd);
@@ -586,5 +686,6 @@ controller.deleteVideo = async (req, res) => {
     console.error("Error deleting video:", err.message);
     res.status(500).json({ success: false, message: "Error deleting video" });
   }
+
 }
 module.exports = controller;

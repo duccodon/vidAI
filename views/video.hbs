@@ -26,6 +26,8 @@
           </div>
           {{#if this.description}}
             <p class="text-sm text-gray-600 mb-2 truncate">Mô tả: {{this.description}}</p>
+          {{else}}
+            <p class="text-sm text-gray-600 mb-2">Mô tả: Không có mô tả</p>
           {{/if}}
           <div class="rounded overflow-hidden">
             <video class="w-full rounded-md border" controls>
@@ -97,7 +99,7 @@
   <!-- Form hiện tại để đồng bộ video -->
   <form action="/Video/video-sync" method="POST">
     <input type="hidden" name="topic" value="NGƯỜI DÙNG CHỌN">
-    <input type="hidden" name="jsonPath" value="/data/generated_timeline_v2.json">
+    <input type="hidden" name="jsonPath" value="/data/outputSample.json">
     <button type="submit" class="fixed bottom-4 right-4 bg-blue-500 text-white rounded-full p-3 shadow-lg hover:bg-blue-600 transition duration-300">
       <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
