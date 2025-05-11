@@ -45,6 +45,7 @@ async function saveVideoToDB(videoData) {
       topic: videoData.topic,
       description: videoData.description,
       userId: videoData.userId || null,
+      content: videoData.content || "",
     });
     console.log("Video saved:", video.id);
     return video;
@@ -67,7 +68,7 @@ const uploadVideo = async (videoPath, metadata = {}, userId = null) => {
   });
 
   console.log("✅ Video uploaded to Cloudinary:", result.secure_url);
-
+  console.log("Video metadata:", metadata.content);
   await saveVideoToDB({
     cloudinaryId: result.public_id,
     filePath: result.secure_url,
@@ -76,13 +77,14 @@ const uploadVideo = async (videoPath, metadata = {}, userId = null) => {
     topic: metadata.topic || "Uncategorized",
     description: metadata.description || "",
     userId,
+    content: metadata.content || "",
   });
 
   return result;
 };
 
 controller.exportVideo = async (req, res) => {
-  const { timeline, audioUrl, audioDuration, volume = 1.0, resolution = '720p', title, description, topic} = req.body;
+  const { timeline, audioUrl, audioDuration, volume = 1.0, resolution = '720p', title, description, content, topic} = req.body;
       if (!Array.isArray(timeline) || !audioUrl || !audioDuration) {
           return res.status(400).json({ error: 'Missing timeline, audioUrl or audioDuration' });
       }
@@ -91,6 +93,10 @@ controller.exportVideo = async (req, res) => {
       console.log('Audio URL:', audioUrl);
       console.log('Audio Duration:', audioDuration);
       console.log('Resolution:', resolution);
+      console.log('Volume:', volume);
+      console.log('Title:', title);
+      console.log('Description:', description);
+      console.log('Content:', content);
       const normalizePath = (url) => {
           try {
           return new URL(url).pathname;
@@ -188,7 +194,7 @@ controller.exportVideo = async (req, res) => {
           }
       
           try {
-            const result = await uploadVideo(outputPath, { title, topic, description }, req.session.userId);
+            const result = await uploadVideo(outputPath, { title, topic, description, content}, req.session.userId);
       
             // Xoá file sau khi upload thành công
             fs.unlinkSync(outputPath, (err) => {
@@ -316,13 +322,11 @@ controller.renderVideo = async (req, res) => {
 };
 
 const moment = require('moment');
+const { content } = require("googleapis/build/src/apis/content");
 
 controller.videoSync = async (req, res) => {
-  const { audioUrl, title, description, topic, jsonPath } = req.body;
+  const {topic, jsonPath} = req.body;
   
-  console.log('Audio URL:', audioUrl);
-  console.log('Title:', title);
-  console.log('Description:', description);
   console.log('Topic:', topic);
   console.log('JSON Path:', jsonPath);
 
@@ -361,10 +365,10 @@ controller.videoSync = async (req, res) => {
         layout: "layout",
         title: "Đồng bộ video",
         metadata: {
-          audioUrl: `/audios/${path.basename(outputAudioPath)}`, // Gán đường dẫn của audio đã merge vào audioUrl
-          title,
-          description,
-          topic,
+          audioUrl: `/audios/${path.basename(outputAudioPath)}`, // Gán đường dẫn của audio đã merge vào audioUrl, đường dẫn đầy đủ, thay đổi nếu cần, sử dụng trong frontend
+          title: '',
+          description:'',
+          topic: topic,
           timeline: timelineData
         }
       });

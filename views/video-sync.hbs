@@ -130,24 +130,46 @@
     
     </div>
 
-    <div id="publishModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-      <div class="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
-        <h2 class="text-lg font-semibold mb-2">Chọn độ phân giải khi xuất bản</h2>
-        <p class="text-sm text-gray-600 mb-4">
-          Sau khi xuất bản, video sẽ được render và lưu lại. Bạn không thể chỉnh sửa bố cục nữa.
-        </p>
-        <select id="resolutionSelect" class="w-full p-2 border rounded mb-4">
+  <div id="publishModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white p-6 rounded-lg shadow-lg max-w-md w-full space-y-4">
+      <h2 class="text-lg font-semibold">Xuất bản video</h2>
+
+      <!-- Topic (hiển thị cố định) -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Chủ đề:</label>
+        <div class="bg-gray-100 p-2 rounded text-gray-800" id="topicDisplay"></div>
+      </div>
+
+      <!-- Title -->
+      <div>
+        <label for="videoTitle" class="block text-sm font-medium text-gray-700 mb-1">Tiêu đề video</label>
+        <input id="videoTitle" type="text" class="w-full p-2 border rounded" placeholder="Nhập tiêu đề..." />
+      </div>
+
+      <!-- Description -->
+      <div>
+        <label for="videoDescription" class="block text-sm font-medium text-gray-700 mb-1">Mô tả video</label>
+        <textarea id="videoDescription" rows="3" class="w-full p-2 border rounded" placeholder="Nhập mô tả..."></textarea>
+      </div>
+
+      <!-- Resolution -->
+      <div>
+        <label for="resolutionSelect" class="block text-sm font-medium text-gray-700 mb-1">Độ phân giải</label>
+        <select id="resolutionSelect" class="w-full p-2 border rounded">
           <option value="360p">360p (nhanh nhất)</option>
           <option value="720p" selected>720p (khuyên dùng)</option>
           <option value="1080p">1080p (chất lượng cao)</option>
         </select>
-        <div class="flex justify-end gap-2">
-          <button id="cancelPublish" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded">Cancel</button>
-          <button id="confirmPublish" class="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded">Confirm</button>
-        </div>
+      </div>
+
+      <!-- Buttons -->
+      <div class="flex justify-end gap-2 pt-2">
+        <button id="cancelPublish" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded">Cancel</button>
+        <button id="confirmPublish" class="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded">Confirm</button>
       </div>
     </div>
   </div>
+
     <script>
         const imageForm = document.getElementById('imageForm');
         const imageTimeline = document.getElementById('imageTimeline');
@@ -167,6 +189,7 @@
         const resolutionSelect = document.getElementById('resolutionSelect');
         const cancelPublish = document.getElementById('cancelPublish');
         const confirmPublish = document.getElementById('confirmPublish');
+        let fullContent = '';
         window.metadata = {{{json metadata}}};
         function updateTimelineMarks(duration) {
           const step = 5;
@@ -249,8 +272,10 @@
             const { src, start, duration } = item;
             const isVideo = src.endsWith('.mp4') || src.endsWith('.mov');
             // Tạo đường dẫn đầy đủ cho src
-            const fullSrc = `/img/assets/${src}`;
-
+            const fullSrc = `/img/assets/${src}`; // Đường dẫn đầy đủ, thay đổi nếu cần
+            if (item.content && item.content.trim() !== '') {
+              fullContent += item.content.trim() + ' ';
+            }
             // Gọi imageManager để thêm ảnh/video vào timeline
             imageManager.addImage(fullSrc, start, duration, isVideo);
           });
@@ -319,7 +344,7 @@
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 timeline: imageManager.getAllImages(),
-                audioUrl: '/img/assets/audio1.mp3',
+                audioUrl: metadata.audioUrl,
                 audioDuration: wavesurfer.getDuration(),
                 volume: parseInt(volumeRange.value) / 100
               })
@@ -341,7 +366,10 @@
 
 
         publishBtn.addEventListener('click', () => {
+          // Hiện modal
           publishModal.classList.remove('hidden');
+          // Gán giá trị topic sẵn
+          document.getElementById('topicDisplay').textContent = metadata.topic || 'Không có chủ đề';
         });
 
         cancelPublish.addEventListener('click', () => {
@@ -353,18 +381,22 @@
           publishBtn.disabled = true;
           publishBtn.textContent = 'Exporting...';
 
+          const title = document.getElementById('videoTitle').value.trim();
+          const description = document.getElementById('videoDescription').value.trim();
+
           try {
             const resp = await fetch('/Video/api/export', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 timeline: imageManager.getAllImages(), // bạn cần đảm bảo gồm start, duration, src
-                audioUrl: '/img/assets/audio1.mp3',
+                audioUrl: metadata.audioUrl,
                 audioDuration: wavesurfer.getDuration(),
                 volume: parseInt(volumeRange.value) / 100,
                 resolution: resolutionSelect.value,
-                title: metadata.title,
-                description: metadata.description,
+                title,
+                description,
+                content: fullContent,
                 topic: metadata.topic,
               })
             });
@@ -414,7 +446,7 @@
           wrapper.className = 'relative';
 
           const thumb = document.createElement(isVideo ? 'video' : 'img');
-          const realPath = `/img/assets/${filename}`;
+          const realPath = `/img/assets/${filename}`; //Đuờng dẫn đầy đủ, thay đổi nếu cần
           thumb.src = realPath;
 
           if (isVideo) {
