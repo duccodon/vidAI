@@ -170,7 +170,6 @@
     </div>
   </div>
 </div>
-
     <script>
         const imageForm = document.getElementById('imageForm');
         const imageTimeline = document.getElementById('imageTimeline');
@@ -202,13 +201,6 @@
             const playhead = scale === imageScale ? imagePlayhead : audioPlayhead;
             scale.appendChild(playhead);
 
-            const waveformWidth = waveform.scrollWidth;
-            const pps = waveformWidth / duration;
-
-            imageScale.style.width = `${waveformWidth}px`;
-            audioScale.style.width = `${waveformWidth}px`;
-            imageTimeline.style.width = `${waveformWidth}px`; // rất quan trọng!
-
             // Tạo tick cho mỗi step (0, 5, 10, ..., gần cuối)
             let t = 0;
             while (t < duration) {
@@ -238,6 +230,7 @@
             }
 
             scale.style.width = `${waveform.scrollWidth}px`;
+            imageScale.style.width = `${waveform.scrollWidth}px`; // <-- trùng lặp
             imageTimeline.style.width = `${waveform.scrollWidth}px`;
           });
         }
@@ -273,10 +266,7 @@
 
         wavesurfer.on('ready', () => {
         const duration = wavesurfer.getDuration();
-        setTimeout(() => {
-          updateTimelineMarks(duration);
-        }, 200); // 50–100ms thường đủ
-
+        updateTimelineMarks(duration);
 
         if (metadata && Array.isArray(metadata.timeline)) {
           metadata.timeline.forEach(item => {

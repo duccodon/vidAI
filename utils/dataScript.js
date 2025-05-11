@@ -31,11 +31,11 @@ async function generateScript(
       - Aim the content for duration: ${duration} (IMPORTANT!).
       - Writing styles: ${writingStyles}
       - Start with a hook like "Let’s explore the topic..." or anything similar.
-      - Response only in Vietnamese.
+      - Response only in English.
       - Each segment must be between **30 seconds and 60 seconds**, must not be longer than 60 seconds.
       - Write the script by time section, e.g., "00:00 - 00:30", "00:30 - 01:00", etc (IMPORTANT!).
       - Must include ALL time sections from 00:00 to ${convertTime(duration)} with NO gaps or missing segments (IMPORTANT!).
-      - Use the following format: "** [Name of this section: 00:00 - 00:30] **: \n[script content relating to this timeline]\n\nIdea 1: \nText:[content of this idea]\nVisual:[Suggest image prompt to generate by AI]\nIdea 2: \nText:[content of this idea]\nVisual:[Suggest image prompt to generate by AI]\n..." (IMPORTANT!).
+      - Use the following format: "** [Name of this section: 00:00 - 00:30] ** \n[script content relating to this timeline]\n\nIdea 1: \nText:[content of this idea]\nVisual:[Suggest image prompt to generate by AI]\nIdea 2: \nText:[content of this idea]\nVisual:[Suggest image prompt to generate by AI]\n..." (IMPORTANT!).
       - Do not add () in script content of each section.
       - Each section must has only 1 to 3 ideas.
       - After each sections, suggest visual and audio elements, such as background music, text animations, call-to-action buttons. Write these elements in parentheses, like: (Upbeat background music), (Display email and logo), (Text animation for Subscribe button).
@@ -239,11 +239,11 @@ async function callOpenAI(duration, topic, writingStyles, rawText) {
       - Aim the content for duration: ${duration} (IMPORTANT!).
       - Writing styles: ${writingStyles}
       - Start with a hook like "Let’s explore the topic..." or anything similar.
-      - Response only in Vietnamese.
+      - Response only in English.
       - Each segment must be between **30 seconds and 60 seconds**, must not be longer than 60 seconds.
       - Write the script by time section, e.g., "00:00 - 00:30", "00:30 - 01:00", etc (IMPORTANT!).
       - Must include ALL time sections from 00:00 to ${convertTime(duration)} with NO gaps or missing segments (IMPORTANT!).
-      - Use the following format: "** [Name of this section: 00:00 - 00:30] **: \n[script content relating to this timeline]\n\nIdea 1: \nText:[content of this idea]\nVisual:[Suggest image prompt to generate by AI]\nIdea 2: \nText:[content of this idea]\nVisual:[Suggest image prompt to generate by AI]\n..." (IMPORTANT!).
+      - Use the following format: "** [Name of this section: 00:00 - 00:30] ** \n[script content relating to this timeline]\n\nIdea 1: \nText:[content of this idea]\nVisual:[Suggest image prompt to generate by AI]\nIdea 2: \nText:[content of this idea]\nVisual:[Suggest image prompt to generate by AI]\n..." (IMPORTANT!).
       - Do not add () in script content of each section.
       - Each section must has only 1 to 3 ideas
       - After each sections, suggest visual and audio elements, such as background music, text animations, call-to-action buttons. Write these elements in parentheses, like: (Upbeat background music), (Display email and logo), (Text animation for Subscribe button).
@@ -288,13 +288,12 @@ async function callGroq(duration, topic, writingStyles, rawText) {
       - Aim the content for duration: ${duration} (IMPORTANT!).
       - Writing styles: ${writingStyles}
       - Start with a hook like "Let’s explore the topic..." or anything similar.
-      - Response only in Vietnamese.
+      - Response only in English.
       - Each segment must be between **30 seconds and 60 seconds**, must not be longer than 60 seconds.
       - Write the script by time section, e.g., "00:00 - 00:30", "00:30 - 01:00", etc (IMPORTANT!).
       - Must include ALL time sections from 00:00 to ${convertTime(duration)} with NO gaps or missing segments (IMPORTANT!).
-      - Use the following format: "** [Name of this section: 00:00 - 00:30] ** : \n[script content relating to this timeline]\n\nIdea 1: \nText:[content of this idea]\nVisual:[Suggest image prompt to generate by AI]\nIdea 2: \nText:[content of this idea]\nVisual:[Suggest image prompt to generate by AI]\n..." (IMPORTANT!).
+      - Use the following format: "** [Name of this section: 00:00 - 00:30] ** \n[script content relating to this timeline]\n\nIdea 1: \nText:[content of this idea]\nVisual:[Suggest image prompt to generate by AI]\nIdea 2: \nText:[content of this idea]\nVisual:[Suggest image prompt to generate by AI]\n..." (IMPORTANT!).
       - Put "Name of this section: " before time section and add [] between them.
-      - (IMPORTANT!) Then add ":" right after them like "** [Name of this section: time section - time section] **:". 
       - Do not add () in script content of each section.
       - Each section must has only 1 to 3 ideas.
       - After each sections, suggest visual and audio elements, such as background music, text animations, call-to-action buttons. Write these elements in parentheses, like: (Upbeat background music), (Display email and logo), (Text animation for Subscribe button).
@@ -339,11 +338,11 @@ async function callDeepSeek(duration, topic, writingStyles, rawText) {
       - Aim the content for duration: ${duration} (IMPORTANT!).
       - Writing styles: ${writingStyles}
       - Start with a hook like "Let’s explore the topic..." or anything similar.
-      - Response only in Vietnamese.
+      - Response only in English.
       - Each segment must be between **30 seconds and 60 seconds**, must not be longer than 60 seconds.
       - Write the script by time section, e.g., "00:00 - 00:30", "00:30 - 01:00", etc (IMPORTANT!).
       - Must include ALL time sections from 00:00 to ${convertTime(duration)} with NO gaps or missing segments (IMPORTANT!).
-      - Use the following format: "** [Name of this section: 00:00 - 00:30] **: \n[script content relating to this timeline]\n\nIdea 1: \nText:[content of this idea]\nVisual:[Suggest image prompt to generate by AI]\nIdea 2: \nText:[content of this idea]\nVisual:[Suggest image prompt to generate by AI]\n..." (IMPORTANT!).
+      - Use the following format: "** [Name of this section: 00:00 - 00:30] ** \n[script content relating to this timeline]\n\nIdea 1: \nText:[content of this idea]\nVisual:[Suggest image prompt to generate by AI]\nIdea 2: \nText:[content of this idea]\nVisual:[Suggest image prompt to generate by AI]\n..." (IMPORTANT!).
       - Do not add () in script content of each section.
       - Each section must has only 1 to 3 ideas
       - After each sections, suggest visual and audio elements, such as background music, text animations, call-to-action buttons. Write these elements in parentheses, like: (Upbeat background music), (Display email and logo), (Text animation for Subscribe button).
